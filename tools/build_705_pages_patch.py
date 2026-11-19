@@ -24,11 +24,17 @@ def main():
     payload = gzip.compress(bytes(a ^ b for a, b in zip(stock, target)), mtime=0)
     patch_hash = hashlib.sha256(payload).hexdigest()
     root = Path(__file__).resolve().parents[1] / "docs/converter"
+    notes = json.loads((root / "release-notes.json").read_text(encoding="utf-8-sig"))
+    if not notes["history"] or notes["history"][0]["version"] != args.version:
+        parser.error("Add the new version at the top of release-notes.json before publishing")
+    for lang in ("zh", "en"):
+        if not notes["features"].get(lang) or not all(row.get(lang) for row in notes["history"]):
+            parser.error("Supply current features and release notes in both languages")
     filename = f"{patch_hash}.xor.gz"
     (root / filename).write_bytes(payload)
     manifest = dict(version=args.version, size=len(stock), stock=STOCK_SHA256, target=digest,
-                    patch=filename, patchHash=patch_hash)
-    (root / "latest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+                    patch=filename, patchHash=patch_hash, notes=notes)
+    (root / "latest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
