@@ -52,3 +52,9 @@ We thank the authors and contributors who shared their code, protocol research a
 | 固件格式与跨机型仿真 / Firmware format and cross-model emulation | [SQ6EMM](https://github.com/sq6emm/ic705-ic9700-ic905-bring-your-own-firmware) · [jeskko](https://github.com/jeskko/ic7300-homebrew) · [zarthur](https://github.com/zarthur/ic-7300_firmware) |
 | CW 独立验证 / CW decoder references | [EliasOenal et al. · multimon-ng](https://github.com/EliasOenal/multimon-ng) · [TigreGotico · OpenTone](https://github.com/TigreGotico/OpenTone) |
 | SSTV 模式与收发验证 / SSTV mode and signal verification | [xdsopl · Robot36](https://github.com/xdsopl/robot36) · [F4JTV](https://github.com/F4JTV/sstv_decoder) · [dnet · pySSTV](https://github.com/dnet/pySSTV) · [colaclanth · sstv](https://github.com/colaclanth/sstv) · [ON4QZ · QSSTV](https://github.com/ON4QZ/QSSTV) · [jbdubbs · QSSTV-Experimental](https://github.com/jbdubbs/QSSTV-Experimental) |
+
+## 创作说明 · AI disclosure
+
+**以上内容均为 AI 完成。**
+
+The project content presented above was produced by AI. Upstream work is credited to its original authors, and on-device test feedback was provided by radio operators.
