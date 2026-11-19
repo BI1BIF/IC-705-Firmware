@@ -1,5 +1,7 @@
 # IC-705 项目接续记录
 
+**2026-11-19 浏览器转换页。** 应用户要求，GitHub Pages 以 main 的 docs 目录发布，[固定入口](https://bi1bif.github.io/IC-705-Firmware/)从官网日版 1.40 DAT 在本地生成 CW D6 / SSTV RX4-TX4。网页重新公开差分数据。以后用 tools/build_705_pages_patch.py 传入原厂 DAT、已验收目标 DAT、版本名和已知目标 SHA-256，提交生成的版本清单和补丁，入口沿用。
+
 **2026-11-19 首页已加入中英 AI 创作说明。** GitHub Pages 浏览器本地转换方案仅作可行性评估，固件与差分补丁继续暂停分发。
 
 **2026-11-19 已撤下 GitHub 固件发布。** 已移除 RX4-TX4 差分附件和 Release，GitHub 当前仅提供项目源码和研究资料。仓库首页与 About 已改为中英对照，首页已加入本期内测微信群二维码。以下发布信息为历史记录。

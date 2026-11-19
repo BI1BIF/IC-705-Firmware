@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>IC-705 固件转换器 · Firmware converter</title>
+<link rel="stylesheet" href="converter/style.css"><script type="module" src="converter/app.js"></script></head>
+<body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><a href="https://github.com/BI1BIF/IC-705-Firmware">项目仓库 · GitHub ↗</a></div></header>
+<main><h1>IC-705 固件转换器<small lang="en">Firmware converter</small></h1>
+<p>选择原厂 DAT，在本机生成 CW 与 SSTV 固件。<br><span lang="en">Select the original DAT to build the CW and SSTV firmware on your device.</span></p>
+<section><dl><div><dt>原厂底包 · Input</dt><dd>IC-705 Japan 1.40</dd></div><div><dt>目标版本 · Output</dt><dd id="version">加载中 · Loading…</dd></div></dl>
+<label for="source">选择原厂文件 · Select original DAT</label>
+<input id="source" type="file" accept=".dat" disabled>
+<a href="https://www.icom.co.jp/support/drivers/8603/">Icom 日版 1.40 下载与使用条款 · Official download and terms ↗</a>
+<p class="note">文件只在浏览器内处理。刷写非官方固件有损坏设备的风险。<br><span lang="en">Your file stays in this browser. Installing unofficial firmware can damage your radio.</span></p>
+<button id="build" disabled>转换并下载 · Build &amp; download</button><p id="status" role="status" aria-live="polite"></p>
+<a id="save" hidden download="705J140.dat">再次下载 · Download again ↓</a></section>
+<p class="hint">将生成的文件保存到 SD 卡的 <code>IC-705/705J140.dat</code>。<br><span lang="en">Save the generated file at this path on your SD card.</span></p>
+</main></body></html>

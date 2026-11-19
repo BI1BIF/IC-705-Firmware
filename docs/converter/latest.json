@@ -1,0 +1,8 @@
+{
+  "version": "CW D6 \u00b7 SSTV RX4-TX4",
+  "size": 12259086,
+  "stock": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
+  "target": "5297e2581cdeb8f48af1ba6dd9b1bb33704675673c49b9448383f8d9a383c039",
+  "patch": "e9df0bcada7380d7696587da4718c2a7c30b4770d5ae64d7bc4c1ec911b27306.xor.gz",
+  "patchHash": "e9df0bcada7380d7696587da4718c2a7c30b4770d5ae64d7bc4c1ec911b27306"
+}

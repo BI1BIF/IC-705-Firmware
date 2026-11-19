@@ -1,8 +1,10 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方日版 IC-705 固件研究项目。当前源码基线 **J140 · CW D6 · SSTV RX4-TX4**，基于 Icom 日版 1.40。此仓库公开源码、测试工具和研究记录。固件与差分补丁已停止分发。
+BI1BIF 的非官方日版 IC-705 固件研究项目。当前源码基线 **J140 · CW D6 · SSTV RX4-TX4**，基于 Icom 日版 1.40。使用下方转换页，在浏览器本地从原厂 DAT 生成当前版本。
 
-BI1BIF’s independent firmware research for the Japanese Icom IC-705. The current source baseline is **J140 · CW D6 · SSTV RX4-TX4**, based on Japanese firmware 1.40. This repository hosts source code, test tools and research notes. Distribution of firmware images and binary patches is suspended.
+BI1BIF’s independent firmware research for the Japanese Icom IC-705. The current source baseline is **J140 · CW D6 · SSTV RX4-TX4**, based on Japanese firmware 1.40. Build the current firmware locally in your browser from the original DAT.
+
+**[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
 ## 电台功能 · Radio features
 
