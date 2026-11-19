@@ -2,11 +2,17 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=3"><script type="module" src="converter/app.js?v=3"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=4"><script type="module" src="converter/app.js?v=4"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
 <p data-en="Select the original Japanese 1.40 DAT to build CW and SSTV firmware locally. Your file stays in this browser.">选择日版 1.40 原厂 DAT，在本机生成 CW 与 SSTV 固件。原厂文件只在浏览器内处理。</p>
+<section class="walkthrough" aria-labelledby="demo-heading">
+<div><h2 id="demo-heading" data-en="Radio simulator walkthrough">电台模拟操作演示</h2>
+<p data-en="In CW mode, press MENU → KEYER → CW DECODE to see the receiver decode CQ.">在 CW 模式下，按 MENU → KEYER → CW DECODE，查看模拟接收信号译出的 CQ。</p>
+<p data-en="From the home screen, press MENU → page 2 → PICTURE → SSTV. Tap the RX preview to watch a Robot 36 image fill in.">从主界面按 MENU → 第 2 页 → PICTURE → SSTV，点 RX 预览，观看 Robot 36 图像逐行接收。</p>
+<button id="demo-toggle" aria-controls="demo-screen"><span id="demo-play" data-en="Play walkthrough">播放演示</span><span id="demo-stop" hidden data-en="Stop walkthrough">停止演示</span></button></div>
+<img id="demo-screen" src="images/radio-demo-cover.png" width="480" height="304" alt="IC-705 LCD"></section>
 <aside class="risk"><h2 data-en="Firmware risks and disclaimer">刷机风险与免责声明</h2>
 <p data-en="This is unofficial firmware. Read Icom’s terms before downloading or modifying its files. Flashing may erase settings or leave the radio unable to start. Back up your settings, check the model and region, and keep power stable.">这是非官方固件。下载或修改原厂文件前，请阅读 Icom 使用条款。刷写可能导致设置丢失或电台无法启动。请先备份设置，核对机型和地区，并确保供电稳定。</p>
 <p data-en="You decide whether to download, modify or flash the firmware and assume the associated risks. The project offers no warranty or repair service.">是否下载、修改和刷写由你自行决定，相关风险由你承担。本项目不提供保修或维修服务。</p>

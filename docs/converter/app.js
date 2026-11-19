@@ -53,6 +53,13 @@ for (const code of ["zh","en"]) el(code).onclick = () => {
 };
 render();
 
+el("demo-toggle").onclick = () => {
+  const play = !el("demo-play").hidden;
+  el("demo-play").hidden = play;
+  el("demo-stop").hidden = !play;
+  el("demo-screen").src = play ? "images/radio-demo.gif" : "images/radio-demo-cover.png";
+};
+
 const source = el("source"), build = el("build"), save = el("save");
 
 async function get(path) {
