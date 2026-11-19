@@ -1,0 +1,268 @@
+{
+  "archives": [
+    {
+      "product": "CS-705",
+      "version": "1.21",
+      "release_date": "2022-12-22",
+      "page": "https://www.icom.co.jp/support/drivers/7075/",
+      "url": "https://www.icom.co.jp/api/download.php?post_id=7075&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkZDczcwNV92ZXIxMjEuemlw",
+      "path": "firmware/comparators/CS-705-v1.21.zip",
+      "zip_bytes": 6554485,
+      "zip_sha256": "3aa9f78ca9a425fa06403584158098c8733192bb99354550f636fe4356dd680b",
+      "members": [
+        {
+          "name": "Cs705_ver121/0x0409.ini",
+          "bytes": 22480,
+          "crc32": "0c49351d",
+          "sha256": "8b76df0ffc9a226b532b60936765b852b89780c6e475c152f7c320e085e43948",
+          "leading_magic": "fffe5b0030007800"
+        },
+        {
+          "name": "Cs705_ver121/0x0411.ini",
+          "bytes": 14946,
+          "crc32": "47c04427",
+          "sha256": "01b8625a29db41e0a190c0634ef3ee4f0878d2b56c92a407018b97bdf4ed7e7d",
+          "leading_magic": "fffe5b0050007200"
+        },
+        {
+          "name": "Cs705_ver121/data1.cab",
+          "bytes": 1168567,
+          "crc32": "e7efd8dc",
+          "sha256": "282922185e38e2a3867e91bfef768398a7c21f519e96b9baa602315770c59411",
+          "leading_magic": "49536328c4090004"
+        },
+        {
+          "name": "Cs705_ver121/data1.hdr",
+          "bytes": 15853,
+          "crc32": "a2e286e9",
+          "sha256": "e0c23adc1b0f583e1ba6b063970363204edab1e27b061de76b85a82b07823f15",
+          "leading_magic": "49536328c4090004"
+        },
+        {
+          "name": "Cs705_ver121/data2.cab",
+          "bytes": 4201542,
+          "crc32": "344c4bc3",
+          "sha256": "bb511b62ea2a0122be6749b4d03ca82fc44edc09c8ea40cef0b650524f7c5238",
+          "leading_magic": "49536328c4090004"
+        },
+        {
+          "name": "Cs705_ver121/ISSetup.dll",
+          "bytes": 1628672,
+          "crc32": "ef49fa3c",
+          "sha256": "80a16734e6e89beb17b3d12164e49d5fa5d5806846e2529c653871937f5b9301",
+          "leading_magic": "4d5a900003000000"
+        },
+        {
+          "name": "Cs705_ver121/layout.bin",
+          "bytes": 580,
+          "crc32": "f3545ccb",
+          "sha256": "9b99e2a85770a0094883345131c9efe7a9c0807c2ab7e4a25e8604e6c3ae6c06",
+          "leading_magic": "6307005300400000"
+        },
+        {
+          "name": "Cs705_ver121/setup.exe",
+          "bytes": 954264,
+          "crc32": "0a373ada",
+          "sha256": "9f6f21872873b6e1ec3a38b6622b5f5c0b1d85373c41449d490298d44bfcf3ad",
+          "leading_magic": "4d5a900003000000"
+        },
+        {
+          "name": "Cs705_ver121/setup.ini",
+          "bytes": 2358,
+          "crc32": "28e42660",
+          "sha256": "f598199aa9f8f6194a8d97bc6724f3fbb0fd6f31a6bbd72348316875a229f2bc",
+          "leading_magic": "fffe5b0053007400"
+        },
+        {
+          "name": "Cs705_ver121/setup.inx",
+          "bytes": 238883,
+          "crc32": "62bf3973",
+          "sha256": "560a2a3ec17268565154afbbc9a6c3d35bddb354d09628b540a4ef3fffce9e97",
+          "leading_magic": "74c42c84e1e5d428"
+        }
+      ],
+      "extracted": [
+        {
+          "path": ".analysis/cs-705/1.21/extracted/DefaultComponent/CS705.exe",
+          "bytes": 4808600,
+          "sha256": "de9b5180b4bdc8a1f7286a7a35e878794ffc0690de2921dd1d140d55195c39c4"
+        },
+        {
+          "path": ".analysis/cs-705/1.21/extracted/DefaultComponent/CS705_ENG.chm",
+          "bytes": 997670,
+          "sha256": "888d6a63248f233d9c1b08a15a078988a8ef9c86f7933a66b79efd2c57c8598d"
+        },
+        {
+          "path": ".analysis/cs-705/1.21/extracted/DefaultComponent/CS705_JPN.chm",
+          "bytes": 1069878,
+          "sha256": "290738ccbc151e13534ffcc3da1822419c4d6a0fbd6fb03a91c9f82c6729fbf0"
+        }
+      ],
+      "compatible_firmware_reference": "1.32",
+      "help_topics": [
+        {
+          "path": ".analysis/cs-705/1.21/topics/ENG/54960.htm",
+          "bytes": 2060,
+          "sha256": "7bb8b92317d4852123b054edd3769691f08effa3fde078112889a82b638d64b8"
+        },
+        {
+          "path": ".analysis/cs-705/1.21/topics/ENG/55938.htm",
+          "bytes": 2135,
+          "sha256": "736c843658d4f0f44184969f576b57c0fe5a6a98ff8ad5d1b7dee777e3754a76"
+        },
+        {
+          "path": ".analysis/cs-705/1.21/topics/ENG/65708.htm",
+          "bytes": 1430,
+          "sha256": "868ce5b154ed5bad281a52b42cb805c75afa24e5e4a8ccebd76db05271264ff5"
+        },
+        {
+          "path": ".analysis/cs-705/1.21/topics/JPN/54960.htm",
+          "bytes": 2072,
+          "sha256": "977c97ee8684cc97a0c990015d84e6016ef5e4f2604c727888cc20f6f1e1ea69"
+        },
+        {
+          "path": ".analysis/cs-705/1.21/topics/JPN/55938.htm",
+          "bytes": 2157,
+          "sha256": "d01963e32a2cb0d2a945ae4abb88539394a3f5c745bda457b21a12f4132f24b7"
+        },
+        {
+          "path": ".analysis/cs-705/1.21/topics/JPN/65708.htm",
+          "bytes": 1367,
+          "sha256": "4bcd6c84388c7124bdc104edd1bae4de047177f61be6827a9f170484fbe93aa1"
+        }
+      ]
+    },
+    {
+      "product": "CS-705",
+      "version": "1.30",
+      "release_date": "2025-08-21",
+      "page": "https://www.icom.co.jp/support/drivers/8597/",
+      "url": "https://www.icom.co.jp/api/download.php?post_id=8597&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkZDczcwNV92ZXIxMzAuemlw",
+      "path": "firmware/comparators/CS-705-v1.30.zip",
+      "zip_bytes": 6750794,
+      "zip_sha256": "6740a996d6307577b949a0d657591aab3f75b34d91431c3f6219f284ad50403b",
+      "members": [
+        {
+          "name": "Cs705_ver130/0x0409.ini",
+          "bytes": 22480,
+          "crc32": "0c49351d",
+          "sha256": "8b76df0ffc9a226b532b60936765b852b89780c6e475c152f7c320e085e43948",
+          "leading_magic": "fffe5b0030007800"
+        },
+        {
+          "name": "Cs705_ver130/0x0411.ini",
+          "bytes": 14946,
+          "crc32": "47c04427",
+          "sha256": "01b8625a29db41e0a190c0634ef3ee4f0878d2b56c92a407018b97bdf4ed7e7d",
+          "leading_magic": "fffe5b0050007200"
+        },
+        {
+          "name": "Cs705_ver130/data1.cab",
+          "bytes": 1168565,
+          "crc32": "9328e8db",
+          "sha256": "686ab633286313b823ba0446507a4d65ea6ead21cfd6365b128c3118255b4ca6",
+          "leading_magic": "49536328c4090004"
+        },
+        {
+          "name": "Cs705_ver130/data1.hdr",
+          "bytes": 15853,
+          "crc32": "9217a560",
+          "sha256": "817337b64548e8fd316458254ca1ba26741449afb317dc9a2924898ab73d24bc",
+          "leading_magic": "49536328c4090004"
+        },
+        {
+          "name": "Cs705_ver130/data2.cab",
+          "bytes": 4397934,
+          "crc32": "39f0b5d4",
+          "sha256": "86aa3d3320ba3cd69caba6434a94cfcc685453ea2a5fed13ff63f28f29b853a0",
+          "leading_magic": "49536328c4090004"
+        },
+        {
+          "name": "Cs705_ver130/ISSetup.dll",
+          "bytes": 1628672,
+          "crc32": "ef49fa3c",
+          "sha256": "80a16734e6e89beb17b3d12164e49d5fa5d5806846e2529c653871937f5b9301",
+          "leading_magic": "4d5a900003000000"
+        },
+        {
+          "name": "Cs705_ver130/layout.bin",
+          "bytes": 580,
+          "crc32": "bb6c1bed",
+          "sha256": "b44169970b8588e90175d4d79cc698e798dcf22c832b2a339c6075015359c3f0",
+          "leading_magic": "6307005300400000"
+        },
+        {
+          "name": "Cs705_ver130/setup.exe",
+          "bytes": 954320,
+          "crc32": "048b5c76",
+          "sha256": "1f02141c80e1e507267a152f7489f03c53e3bdeca1653b9bcadd23052213bb72",
+          "leading_magic": "4d5a900003000000"
+        },
+        {
+          "name": "Cs705_ver130/setup.ini",
+          "bytes": 2358,
+          "crc32": "28e42660",
+          "sha256": "f598199aa9f8f6194a8d97bc6724f3fbb0fd6f31a6bbd72348316875a229f2bc",
+          "leading_magic": "fffe5b0053007400"
+        },
+        {
+          "name": "Cs705_ver130/setup.inx",
+          "bytes": 238883,
+          "crc32": "62bf3973",
+          "sha256": "560a2a3ec17268565154afbbc9a6c3d35bddb354d09628b540a4ef3fffce9e97",
+          "leading_magic": "74c42c84e1e5d428"
+        }
+      ],
+      "extracted": [
+        {
+          "path": ".analysis/cs-705/1.30/extracted/DefaultComponent/CS705.exe",
+          "bytes": 4839896,
+          "sha256": "e9439e1413e1258be77e6ef2188b72276dd714642e3858f4690e5d45653aeca3"
+        },
+        {
+          "path": ".analysis/cs-705/1.30/extracted/DefaultComponent/CS705_ENG.chm",
+          "bytes": 1073804,
+          "sha256": "28a0d1ac44dfc1d41d93cdc840872ecd31cc4d5251a1afb6aef17e9ab524bcd9"
+        },
+        {
+          "path": ".analysis/cs-705/1.30/extracted/DefaultComponent/CS705_JPN.chm",
+          "bytes": 1176638,
+          "sha256": "9cf39d1dc874d1627ca9a99007836a1a1066287ac2b8c8bceab6e588eb73ffd6"
+        }
+      ],
+      "compatible_firmware_reference": "1.40",
+      "help_topics": [
+        {
+          "path": ".analysis/cs-705/1.30/topics/ENG/54960.htm",
+          "bytes": 2060,
+          "sha256": "7bb8b92317d4852123b054edd3769691f08effa3fde078112889a82b638d64b8"
+        },
+        {
+          "path": ".analysis/cs-705/1.30/topics/ENG/55938.htm",
+          "bytes": 2538,
+          "sha256": "e601a88efc915f8ef8da6119a148c55fb642e9d1b3973f2421ba6ef1fe71d387"
+        },
+        {
+          "path": ".analysis/cs-705/1.30/topics/ENG/65708.htm",
+          "bytes": 1437,
+          "sha256": "82b2dec7725831f87b9d923ac301a35e52c0fb7d53c45072a052274f19e2c591"
+        },
+        {
+          "path": ".analysis/cs-705/1.30/topics/JPN/54960.htm",
+          "bytes": 2072,
+          "sha256": "977c97ee8684cc97a0c990015d84e6016ef5e4f2604c727888cc20f6f1e1ea69"
+        },
+        {
+          "path": ".analysis/cs-705/1.30/topics/JPN/55938.htm",
+          "bytes": 2702,
+          "sha256": "474b3f86c704a8c4e85ae7b1e8dbd409fa46beaed2323dc36397df0353d30e12"
+        },
+        {
+          "path": ".analysis/cs-705/1.30/topics/JPN/65708.htm",
+          "bytes": 1373,
+          "sha256": "1030755b5c2270d1d23c7149e811af1e2ce6f22e8fccddb349754d92d3f97031"
+        }
+      ]
+    }
+  ]
+}

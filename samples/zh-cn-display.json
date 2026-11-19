@@ -1,0 +1,14 @@
+{
+  "title": "显示语言",
+  "badge": "离线排版样张",
+  "breadcrumb": "菜单 / 设置 / 显示设置",
+  "choices": [
+    {"label": "简体中文", "status": "已选择", "active": true},
+    {"label": "日本語", "status": "", "active": false},
+    {"label": "English", "status": "", "active": false}
+  ],
+  "fallback_note": "未找到简体中文翻译时，显示原厂语言。",
+  "mixed_format": "状态预览：{0} MHz · {1}",
+  "frequency": "145.500",
+  "mode": "CW"
+}

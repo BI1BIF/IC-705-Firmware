@@ -1,0 +1,46 @@
+[
+  {
+    "name": "905J120",
+    "page": "https://www.icom.co.jp/support/drivers/8671/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=8671&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY5MDVKMTIwLnppcA==",
+    "zip_bytes": 15353173,
+    "zip_sha256": "527266fa247b1d0733df840c2d4f6997b69d47f7d4fb101329638ee03500266f",
+    "dat_member": "905J120.dat",
+    "dat_bytes": 22255324,
+    "dat_sha256": "e742901ce5f36a3e2062c268076a79ac1daeaa357b23fd593ccc03b5ac2df96b",
+    "dat_crc32": "1866146a"
+  },
+  {
+    "name": "905J115",
+    "page": "https://www.icom.co.jp/support/drivers/7802/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=7802&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY5MDVKMTE1LnppcA==",
+    "zip_bytes": 15332901,
+    "zip_sha256": "fb2b3466301f43077275e630712091051dd33cc61969bd031743ddb9c33fdf6a",
+    "dat_member": "905J115.dat",
+    "dat_bytes": 22255324,
+    "dat_sha256": "47008f4fc56374c8bb9f9c92645ab07350494ba9ecab230a964904b6e228b104",
+    "dat_crc32": "34a431fc"
+  },
+  {
+    "name": "9700J150",
+    "page": "https://www.icom.co.jp/support/drivers/8599/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=8599&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY5NzAwSjE1MC56aXA=",
+    "zip_bytes": 13691349,
+    "zip_sha256": "e4aa012ca554da1db7865845b582ca7790d2f51a4b710a209d0f342b2a46dd9f",
+    "dat_member": "9700J150.dat",
+    "dat_bytes": 15613952,
+    "dat_sha256": "4bbb457f20bfee950ebc6789c64b825de757bba369cfba496c9eba385c14b6ca",
+    "dat_crc32": "3672fb39"
+  },
+  {
+    "name": "9700J144",
+    "page": "https://www.icom.co.jp/support/drivers/7495/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=7495&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY5NzAwSjE0NC56aXA=",
+    "zip_bytes": 13666105,
+    "zip_sha256": "851baa1dce89675b81ea43c51dea8a2630e4554808be7660b1f78fc779a0f37a",
+    "dat_member": "9700J144.dat",
+    "dat_bytes": 15613952,
+    "dat_sha256": "2f95ad13ed339ceff62692489cc93484ff68f47e8912f8277cbbb55f2c1aee31",
+    "dat_crc32": "b5776b1f"
+  }
+]

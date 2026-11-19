@@ -1,0 +1,17 @@
+/firmware/*
+!/firmware/README.md
+/.venv/
+/.analysis/
+__pycache__/
+*.py[cod]
+
+# Keep vendor payloads and dumps local even if misplaced.
+*.[Dd][Aa][Tt]
+*.[Ii][Cc][Ff]
+*.[Bb][Ii][Nn]
+*.[Zz][Ii][Pp]
+*.[Tt][Tt][Ff]
+*.elf
+*.ic705sim
+*.gpr
+*.rep/

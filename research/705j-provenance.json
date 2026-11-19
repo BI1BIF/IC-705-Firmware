@@ -1,0 +1,92 @@
+[
+  {
+    "name": "705J140",
+    "page": "https://www.icom.co.jp/support/drivers/8603/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=8603&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTQwLnppcA==",
+    "zip_bytes": 8534581,
+    "zip_sha256": "0bd11ab2dc9c9dbf38840dadcc825b0c0a030b7eacb4f050fc585e386f9fa833",
+    "dat_bytes": 12259086,
+    "dat_sha256": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
+    "dat_crc32": "cdffaa3d"
+  },
+  {
+    "name": "705J132",
+    "page": "https://www.icom.co.jp/support/drivers/7074/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=7074&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTMyLnppcA==",
+    "zip_bytes": 8517967,
+    "zip_sha256": "fd275fdf84a1ff5bd0323eff512257d670617d4bdf816be5bf0eaa3e365ba4fe",
+    "dat_bytes": 12259086,
+    "dat_sha256": "43903a2046978d7559bc60f0c834c864d5d6ac1531f29c785c0a66003b8796f0",
+    "dat_crc32": "b6425024"
+  },
+  {
+    "name": "705J131",
+    "page": "https://www.icom.co.jp/support/drivers/7024/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=7024&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTMxLnppcA==",
+    "zip_bytes": 8508039,
+    "zip_sha256": "cd86b038be05ac38419ebfd8d1e13beab642fa822ea6010b0b03319b665dcb57",
+    "dat_bytes": 12259074,
+    "dat_sha256": "c7fdc466212411f8a732ebe12650e3e748f1e8b2eb5f502bb3f0561f33481866",
+    "dat_crc32": "8ec51c02"
+  },
+  {
+    "name": "705J130",
+    "page": "https://www.icom.co.jp/support/drivers/7010/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=7010&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTMwLnppcA==",
+    "zip_bytes": 8507526,
+    "zip_sha256": "03b4786c371de6bb6419e4a4fb6a91a8a781cce7237bb50e4b383519cc27f5b1",
+    "dat_bytes": 12259074,
+    "dat_sha256": "642e6b8b5312209330528e7a306953a76312e43925545d0b6aa7f0f826ee8199",
+    "dat_crc32": "c23cc95e"
+  },
+  {
+    "name": "705J127",
+    "page": "https://www.icom.co.jp/support/drivers/6845/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=6845&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTI3LnppcA==",
+    "zip_bytes": 8531146,
+    "zip_sha256": "e41b1dbf1237c59a784418b7fd5bda0bbff7c07e8f1bf725171801d310d41069",
+    "dat_bytes": 12299877,
+    "dat_sha256": "df18758be22d7d58e64e23ec52b28d619953f1754ada290dd3163bc07c4687e1",
+    "dat_crc32": "be872a73"
+  },
+  {
+    "name": "705J126",
+    "page": "https://www.icom.co.jp/support/drivers/6435/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=6435&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTI2LnppcA==",
+    "zip_bytes": 8531140,
+    "zip_sha256": "3e9862d2ccb31437ac6db21a5a46ad9789d6898383d9ea7efffa6edff9d8b7a0",
+    "dat_bytes": 12299877,
+    "dat_sha256": "9bd37c25080b8c810a364f065ace645b4e3aeef9c0c5d7c4059009053664bfaf",
+    "dat_crc32": "40b256f6"
+  },
+  {
+    "name": "705J124",
+    "page": "https://www.icom.co.jp/support/drivers/6192/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=6192&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTI0LnppcA==",
+    "zip_bytes": 8527215,
+    "zip_sha256": "d3ac056e48071078dec806c4cca9d9063b75d9d639cb7f1f163a217d20edf5a0",
+    "dat_bytes": 12299600,
+    "dat_sha256": "e50b0b5e4cd08abb7d80d270127eabb0777be7b608e864b811fa99bb556503de",
+    "dat_crc32": "ae808a94"
+  },
+  {
+    "name": "705J120",
+    "page": "https://www.icom.co.jp/support/drivers/6128/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=6128&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTIwLnppcA==",
+    "zip_bytes": 8527018,
+    "zip_sha256": "38c8da85e61f6dd1e5af48039522e87449beecdc8baf7bb71cc97a08d5b80e04",
+    "dat_bytes": 12299600,
+    "dat_sha256": "9e53ada2ea6df04bdb129d819dae72544472bf1d2aa61e7c88c6ff0fda23e24d",
+    "dat_crc32": "24ac9f31"
+  },
+  {
+    "name": "705J111",
+    "page": "https://www.icom.co.jp/support/drivers/5612/",
+    "url": "https://www.icom.co.jp/api/download.php?post_id=5612&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVKMTExLnppcA==",
+    "zip_bytes": 8413716,
+    "zip_sha256": "b214401b1d850f0f31cda97f8ffc7e337f39f1489b726d6fe9e1833c90f6579f",
+    "dat_bytes": 12265672,
+    "dat_sha256": "4a05f76df5c483a42210967b71a24587b81df98f6a6f93a75680fed97b02a043",
+    "dat_crc32": "73d75c1c"
+  }
+]

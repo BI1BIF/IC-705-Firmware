@@ -1,0 +1,65 @@
+{
+  "archives": [
+    {
+      "page": "https://www.icom.co.jp/support/drivers/8924/",
+      "url": "https://www.icom.co.jp/api/download.php?post_id=8924&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZkcml2ZXJzJTJGZG93bmxvYWQlMkY3MDVfSlBOX1JwdF8yNjA2Mjcuemlw",
+      "path": "firmware/comparators/icom-705-settings-jpn.zip",
+      "size": 198502,
+      "sha256": "26f7aa6f2ac347cb96c3507ed8499e633f669e4cf7deab407084b416d31df43f",
+      "members": [
+        {
+          "name": "705_JPN_260627.icf",
+          "bytes": 589697,
+          "sha256": "2b50968e0a29c1c254fd3f2c1ffcf2a189ad6c2bc5ddcf2e985cf69b9f0cbf46"
+        },
+        {
+          "name": "RptMoni_sample.csv",
+          "bytes": 23800,
+          "sha256": "4db4e61639babd62d9f90e021b8b5e2709b92d1ab1a416eebbaf9dc2aad5c524"
+        },
+        {
+          "name": "705_J_Rpt_260627.csv",
+          "bytes": 295888,
+          "sha256": "1e14e923b77ee10a58bd8adf10efb96a14807b499165f51e4b4dcacf65abf40e"
+        }
+      ],
+      "region": "JPN",
+      "icf_map_rev": 6,
+      "page_version_as_published": "260427",
+      "page_release_date": "2026-06-29",
+      "rea_zip_evidence": "ev_70899c869e582eec96f8a1ac21cc15c835dddfd265b1875eb3400fac364c6f68"
+    },
+    {
+      "page": "https://www.icomamerica.com/support/firmware_driver/3071/",
+      "url": "https://www.icomamerica.com/api/download.php?post_id=3071&fl=JTJGdXBsb2FkcyUyRnN1cHBvcnQlMkZmaXJtd2FyZV9kcml2ZXIlMkY3MDVfVVNBX1JwdF8yMjEyMjIuemlw",
+      "path": "firmware/comparators/icom-705-settings-usa.zip",
+      "size": 171695,
+      "sha256": "4324c86e2e8e10cee97ec85ee84d4902168faea399b94738d148ef5c3eca8de0",
+      "members": [
+        {
+          "name": "705_USA_221222.icf",
+          "bytes": 589697,
+          "sha256": "fe95532f590c90db0d6763b6517e91e950252300e8759bf65e2b57d034add2e7"
+        },
+        {
+          "name": "705_USA_Gps_200721.csv",
+          "bytes": 1151,
+          "sha256": "6e2a84ff4e54242243ed8ab5811471bd3a9ae83f389f6bf157b482a1d840674e"
+        },
+        {
+          "name": "705_USA_Rpt_221222.csv",
+          "bytes": 261076,
+          "sha256": "3ae1acc992c830b8a792fcfdda5fb265b3218c0fc3b65489dc84b5411fe54109"
+        },
+        {
+          "name": "RepMoni_sample.csv",
+          "bytes": 25197,
+          "sha256": "b112b73e04053f42d5fd5abe81edb173cb11903a4198e4a56768ccc3b54c2328"
+        }
+      ],
+      "region": "USA",
+      "icf_map_rev": 3,
+      "rea_zip_evidence": "ev_a3c361b96ec6708e665bee68b8151a81da0dbe2b1ea750f8877b6ee34f30bc16"
+    }
+  ]
+}
