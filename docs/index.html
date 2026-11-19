@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=2"><script type="module" src="converter/app.js?v=2"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=3"><script type="module" src="converter/app.js?v=3"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
@@ -16,7 +16,7 @@
 <div class="file"><input id="source" type="file" accept=".dat" disabled><label for="source" data-en="Choose DAT file">选择 DAT 文件</label><span id="filename"></span></div>
 <a href="https://www.icom.co.jp/support/drivers/8603/" data-en="Get Japanese firmware 1.40 from Icom ↗">下载 Icom 日版 1.40 原厂固件 ↗</a>
 <p><button id="build" disabled data-en="Build and download">转换并下载</button></p><p id="status" role="status" aria-live="polite"></p>
-<a id="save" hidden download="705J140.dat" data-en="Download again ↓">再次下载 ↓</a>
+<a id="save" hidden download="705J140.dat" data-en="Save 705J140.dat ↓">手动保存 705J140.dat ↓</a>
 <p class="hint"><span data-en="Save the generated file on the SD card at">生成文件在 SD 卡上的保存路径为</span> <code>IC-705/705J140.dat</code></p></section>
 <section class="details"><h2 data-en="Current features">当前版本功能</h2><ul id="features"></ul></section>
 <section class="details"><h2 data-en="Release history">版本更新日志</h2><div id="history"></div></section>

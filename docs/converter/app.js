@@ -1,14 +1,17 @@
 const el = id => document.getElementById(id);
 let lang = "zh", release, downloadUrl, state = "", failed = false;
 try { if (localStorage.getItem("ic705-language") === "en") lang = "en"; } catch {}
+let received = 0;
 const messages = {
+  fetching:["正在下载转换补丁","Downloading the patch"],
+  network:["补丁下载中断或服务器未响应。请检查网络，再点“转换并下载”重试。","The patch download stalled or failed. Check your connection, then select Build and download to retry."],
   unsupported:["请使用支持本地解压的新版浏览器。","Use a current browser with gzip support."],
   loadError:["无法加载版本信息，请刷新页面。","Could not load the release. Refresh to retry."],
   wrongBase:["底包不匹配，请选择未修改的日版 1.40 DAT。","Select the unmodified Japanese 1.40 DAT."],
   badOutput:["补丁或输出校验失败，请刷新重试。","Verification failed. Refresh and retry."],
   checking:["正在校验原厂文件…","Checking the original firmware…"],
   building:["正在生成并校验固件…","Building and verifying firmware…"],
-  ready:["校验通过，文件已可下载。","Firmware verified and ready to download."],
+  ready:["固件已生成。如果下载未开始，请点下方按钮手动保存。若在微信内仍无法保存，请用系统浏览器打开此页并重新选择原厂 DAT。","Firmware is ready. If the download did not start, use the save button below. If saving fails in an in-app browser, reopen this page in your system browser and select the original DAT again."],
   retry:["转换失败，请检查网络后重试。","Build failed. Check your connection and retry."]
 };
 const translated = document.querySelectorAll("[data-en]");
@@ -16,6 +19,7 @@ for (const node of translated) node.dataset.zh = node.textContent;
 function setState(key) {
   state = key;
   el("status").textContent = key ? messages[key][lang === "en" ? 1 : 0] : "";
+  if (key === "fetching") el("status").textContent += " · " + (received / 1048576).toFixed(2) + " MiB";
 }
 function node(tag, text) {
   const item = document.createElement(tag);
@@ -57,6 +61,42 @@ async function get(path) {
   return response;
 }
 
+async function downloadPatch(path) {
+  const controller = new AbortController();
+  let timer;
+  function watch() {
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), 45000);
+  }
+  received = 0;
+  setState("fetching");
+  watch();
+  try {
+    // The patch filename is its content hash, so a cached copy is reusable.
+    const response = await fetch(path, {signal: controller.signal, credentials: "omit"});
+    if (!response.ok) throw new Error("network");
+    const reader = response.body.getReader();
+    const chunks = [];
+    let lastUpdate = 0;
+    for (;;) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.byteLength;
+      watch();
+      if (performance.now() - lastUpdate >= 150) {
+        setState("fetching");
+        lastUpdate = performance.now();
+      }
+    }
+    return await new Blob(chunks).arrayBuffer();
+  } catch {
+    throw new Error("network");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function sha256(bytes) {
   const hash = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, "0")).join("");
@@ -86,8 +126,8 @@ build.onclick = async () => {
     if (file.size !== release.size) throw new Error("wrongBase");
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (await sha256(bytes) !== release.stock) throw new Error("wrongBase");
+    const packed = await downloadPatch("converter/" + release.patch);
     setState("building");
-    const packed = await (await get("converter/" + release.patch)).arrayBuffer();
     if (await sha256(packed) !== release.patchHash) throw new Error("badOutput");
     const stream = new Blob([packed]).stream().pipeThrough(new DecompressionStream("gzip"));
     const delta = new Uint8Array(await new Response(stream).arrayBuffer());
@@ -97,10 +137,10 @@ build.onclick = async () => {
     downloadUrl = URL.createObjectURL(new Blob([bytes], {type: "application/octet-stream"}));
     save.href = downloadUrl;
     save.hidden = false;
-    save.click();
     setState("ready");
+    save.click();
   } catch (error) {
-    setState(["wrongBase","badOutput","loadError"].includes(error.message) ? error.message : "retry");
+    setState(["wrongBase","badOutput","loadError","network"].includes(error.message) ? error.message : "retry");
   } finally {
     source.disabled = build.disabled = false;
   }
