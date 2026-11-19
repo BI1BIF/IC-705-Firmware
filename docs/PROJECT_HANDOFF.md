@@ -1,6 +1,6 @@
 # IC-705 项目接续记录
 
-**GitHub 项目交付（2026-11-19）。** 仓库使用 [BI1BIF/IC-705-Firmware](https://github.com/BI1BIF/IC-705-Firmware)，首版基线为 J140 / CW D6 / SSTV RX4-TX4。发布差分包已用原厂日版 1.40 还原，并逐字节对照当前整包。来源见[分阶段致谢](ACKNOWLEDGEMENTS.md)。固件下一项验收仍为 TX4 新增模式的真机互收。
+**GitHub 项目交付（2026-11-19）。** 仓库使用 [BI1BIF/IC-705-Firmware](https://github.com/BI1BIF/IC-705-Firmware)，仓库已公开，已匿名访问[固定发布入口](https://github.com/BI1BIF/IC-705-Firmware/releases/latest)并下载核对补丁 SHA-256。首版基线为 J140 / CW D6 / SSTV RX4-TX4。发布差分包已用原厂日版 1.40 还原，并逐字节对照当前整包。来源见[分阶段致谢](ACKNOWLEDGEMENTS.md)。固件下一项验收仍为 TX4 新增模式的真机互收。
 
 **当前断点（2026-11-19）为 RX4-TX4 新增发射模式的真机互收。** 依用户新指示，全部 23 种 RX 模式已进入六页 TX 选择器。相对 TX3，主程序和静态数据合计增加 3,488 字节，距原厂全局区还有 9,672 字节，DAT 仍为 12,259,086 字节。每个模式均通过原厂触屏菜单选择、模拟 ARM 调制输出的完整时长、VIS 和图像频率对照。Robot 36 和 Martin M1 的原厂 DMA 整帧 WAV 与 TX3 逐字节相同。下一项为实体机从卡选山景图，优先互收 Scottie S1、PD120、BW 8，核对对端模式识别、图底和自动回到接收。[交付 ZIP](../.analysis/j140-sstv-rx4-tx4/705J140-CW-D6-SSTV-RX4-TX4.zip) · [波形对照](../.analysis/j140-sstv-rx4-tx4/tx-multimode.json) · [菜单验收](../.analysis/j140-sstv-rx4-tx4/tx-picker.json) · [整包回放](../.analysis/j140-sstv-rx4-tx4/verification.json)。DAT SHA-256 为 `5297e2581cdeb8f48af1ba6dd9b1bb33704675673c49b9448383f8d9a383c039`。
 
