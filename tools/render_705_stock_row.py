@@ -77,7 +77,7 @@ def coverage(segments, coords, offset, width, height, scale=4):
 class TextSurface:
     """Software model of the OpenVG calls observed in the stock settings UI."""
 
-    def __init__(self, cpu, width, height):
+    def __init__(self, cpu, width, height, *, graphics_shift=0):
         self.cpu, self.width, self.height = cpu, width, height
         self.pixels = bytearray(width * height * 4)
         self.display = (width, height, self.pixels)
@@ -117,9 +117,10 @@ class TextSurface:
             0x2026362E: self.clear,
             0x202D1748: self.diagnostic,
         }
+        self.handlers = {addr+graphics_shift: fn for addr, fn in self.handlers.items()}
         for addr in self.handlers:
             cpu.hook_add(uc.UC_HOOK_CODE, self.dispatch, begin=addr, end=addr)
-        cpu.hook_add(uc.UC_HOOK_CODE, self.font_lookup, begin=0x201971F0, end=0x201971F0)
+        cpu.hook_add(uc.UC_HOOK_CODE, self.font_lookup, begin=0x201971F0+graphics_shift, end=0x201971F0+graphics_shift)
 
     def reg(self, name):
         return self.cpu.reg_read(getattr(arm, f"UC_ARM_REG_{name}"))
@@ -488,21 +489,21 @@ class TextSurface:
                             "rgba": rgba.hex(), "auto_hint_requested": bool(auto_hint), "glyphs": glyphs})
 
 
-def make_surface(main_image, font, small_font=None, *, cpu=None, initialize=True):
+def make_surface(main_image, font, small_font=None, *, cpu=None, initialize=True, graphics_shift=0):
     if cpu is None:
         cpu = machine(main_image)
     cpu.reg_write(arm.UC_ARM_REG_C1_C0_2, 0xF00000)
     cpu.reg_write(arm.UC_ARM_REG_FPEXC, 0x40000000)
     cpu.mem_map(FONT_HEADER, (len(font) + 4 + 4095) & ~4095, uc.UC_PROT_READ)
     cpu.mem_write(FONT_HEADER, pack("<I", len(font)) + font)
-    dimensions = call(cpu, 0x20195190, 18)
+    dimensions = call(cpu, 0x20195190+graphics_shift, 18)
     width, height = unpack("<HH", cpu.mem_read(dimensions + 4, 4))
     require((width, height) == (480, 272), "unexpected stock text surface dimensions")
-    surface = TextSurface(cpu, width, height)
+    surface = TextSurface(cpu, width, height, graphics_shift=graphics_shift)
     cpu.mem_write(0x203808A0, pack("<2I", FONT_HEADER + 4, len(font)))
     if small_font is None and initialize:
         for instance, initial_ppem in ((1, 18), (4, 10)):
-            result = call(cpu, 0x20144F00, instance, 1, initial_ppem, instruction_limit=2_000_000)
+            result = call(cpu, 0x20144F00+graphics_shift, instance, 1, initial_ppem, instruction_limit=2_000_000)
             require(result == 0, "original font initialization failed")
     elif small_font is not None:
         # The small font begins in the last page of the large font's mapping.
@@ -512,7 +513,7 @@ def make_surface(main_image, font, small_font=None, *, cpu=None, initialize=True
         cpu.mem_write(SMALL_FONT_HEADER, pack("<I", len(small_font)) + small_font)
         cpu.mem_write(0x203808A8, pack("<2I", SMALL_FONT_HEADER+4, len(small_font)))
         if initialize:
-            call(cpu, 0x20145244, instruction_limit=5_000_000)
+            call(cpu, 0x20145244+graphics_shift, instruction_limit=5_000_000)
     return cpu, surface
 
 

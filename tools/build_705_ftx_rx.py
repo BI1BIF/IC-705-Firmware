@@ -64,6 +64,34 @@ FLAGS = [
 ]
 
 
+def pack_init_tail(data, pos):
+    """Encode initialized bytes using preceding bytes at the same RAM destination."""
+    packed = bytearray()
+    literals = bytearray()
+    def flush_literals():
+        if literals:
+            packed.append(128 + len(literals))
+            packed.extend(literals)
+            literals.clear()
+    while pos < len(data):
+        size = min(127,len(data)-pos)
+        while size >= 4:
+            match = data.rfind(data[pos:pos+size],0,pos)
+            if match >= 0: break
+            size -= 1
+        if size >= 4:
+            flush_literals()
+            packed.extend(pack("<BH",size,pos-match))
+            pos += size
+        else:
+            literals.append(data[pos])
+            pos += 1
+            if len(literals)==127: flush_literals()
+    flush_literals()
+    packed.append(0)
+    return packed
+
+
 def word(buf, addr):
     return unpack_from("<I", buf, addr - BASE)[0]
 
@@ -482,30 +510,7 @@ def assemble(base, sections, sym):
         menu.extend(record)
     # Cold initialization already copies the OEM descriptors. Encode extension
     # rows as literals or copies from descriptors already restored in RAM.
-    packed = bytearray()
-    literals = bytearray()
-    def flush_literals():
-        if literals:
-            packed.append(128 + len(literals))
-            packed.extend(literals)
-            literals.clear()
-    pos = 277 * STRIDE
-    while pos < len(menu):
-        size = min(127,len(menu)-pos)
-        while size >= 4:
-            match = menu.rfind(menu[pos:pos+size],0,pos)
-            if match >= 0: break
-            size -= 1
-        if size >= 4:
-            flush_literals()
-            packed.extend(pack("<BH",size,pos-match))
-            pos += size
-        else:
-            literals.append(menu[pos])
-            pos += 1
-            if len(literals)==127: flush_literals()
-    flush_literals()
-    packed.append(0)
+    packed = pack_init_tail(menu, 277 * STRIDE)
     mode_start = DUP + 277 * STRIDE
     label_address = DUP + 317 * STRIDE - len(packed)
     put(label_address,packed)

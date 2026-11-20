@@ -125,7 +125,17 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
           measure_stack=False, live=False, rf_scope=False, field_rtx=None, audio_experiment=None,
           panel_experiment=None, application=None):
     digest = sha256(main).hexdigest()
-    require(digest in PROFILES and PROFILES[digest].name == "705J140", "expected stock Japanese 1.40")
+    e140 = digest == "3df33f33de9b2754a86cc61608334e61364e409f5a8ce905f0fac0e42afd3b3c"
+    if e140:
+        require(application is not None and not (extension or field_rtx) and
+                (audio_experiment or (graphics and live and screen and panel_experiment)),
+                "unsupported E140 replay configuration")
+    else:
+        require(digest in PROFILES and PROFILES[digest].name == "705J140", "expected stock IC-705 1.40")
+    # E140's UI startup and audio loop moved by different amounts. Its IRQ table and RAM layout match J140.
+    ui_start_shift = -152 if e140 else 0
+    audio_shift = 228 if e140 else 0
+    idle_entry = IDLE + audio_shift
     cpu = machine(main if application is None else application)
     for page in (GICD, GICC, 0xFCFEC000, 0xFCFE0000, 0x3FFFF000,
                  0xFCFE3000, 0xFCFE7000, 0xFCFEE000, 0xFCFEF000, 0xFCFF0000, DMAC, 0xE8005000):
@@ -136,14 +146,14 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
         call(cpu, 0x200052ED, 0x20367B78, 0x20380000, 0x1F44)
     else:
         cpu.emu_start(0x200052c9,0x200052a8,count=12000000)
-        require(cpu.reg_read(arm.UC_ARM_REG_PC)==0x200052a8,"J140 application data initialization stalled")
+        require(cpu.reg_read(arm.UC_ARM_REG_PC)==0x200052a8,"IC-705 application data initialization stalled")
     call(cpu, 0x200054DC)  # Original VFP setup, before the isolated RTX entry.
     if graphics:
         _, font, sprites, _, small_font = graphics
-        _, surface = make_surface(main, font, small_font, cpu=cpu, initialize=False)
+        _, surface = make_surface(main, font, small_font, cpu=cpu, initialize=False, graphics_shift=audio_shift)
         cpu.mem_map(GRAPHICS_FLASH, len(sprites), uc.UC_PROT_READ)
         cpu.mem_write(GRAPHICS_FLASH, sprites)
-        attach_front_surface(cpu, surface, double_buffered=True)
+        attach_front_surface(cpu, surface, double_buffered=True, graphics_shift=audio_shift)
     stages, sgis, eois, faults = {}, [], [], []
     svc_count = 0
     stack_audit = StackAudit(cpu) if measure_stack else None
@@ -199,7 +209,7 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
     cpu.hook_add(uc.UC_HOOK_MEM_READ, advance_counter, begin=0xFCFEC404, end=0xFCFEC404)
     # Keep the same virtual addresses as the guest; the rig has flat mappings.
     cpu.hook_add(uc.UC_HOOK_CODE, lambda *_: set_reg("R0", reg("R0") & ~1),
-                 begin=0x20125560, end=0x20125560)
+                 begin=0x20125560 + audio_shift, end=0x20125560 + audio_shift)
     for mode, stack in ((0x93, SP-0x1000), (0x92, SP-0x2000), (0x1F, SP)):
         set_reg("CPSR", mode)
         set_reg("SP", stack)
@@ -210,16 +220,19 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
 
         # Stop at the stock idle entry before Unicorn executes its event-wait loop.
         # A temporary code hook alone can miss this entry in a cached translation.
-        hook = None if target in (STOP, IDLE) else cpu.hook_add(uc.UC_HOOK_CODE, stop, begin=target, end=target)
+        hook = None if target in (STOP, idle_entry) else cpu.hook_add(uc.UC_HOOK_CODE, stop, begin=target, end=target)
         try:
-            cpu.emu_start(entry, target if target == IDLE else STOP, count=limit)
+            cpu.emu_start(entry, target if target == idle_entry else STOP, count=limit)
         except uc.UcError as err:
             raise ValueError(f"run {entry:#x} failed at {reg('PC'):#x}, unmapped: {faults}") from err
         finally:
             if hook is not None:
                 cpu.hook_del(hook)
         pc = reg("PC")
-        require(pc == target, f"{entry:#x} reached {pc:#x}, expected {target:#x}")
+        if pc != target:
+            stack = unpack("<8I",cpu.mem_read(reg("SP"),32))
+            raise ValueError(f"{entry:#x} reached {pc:#x}, expected {target:#x}; LR={reg('LR'):#x}, "
+                             f"R3={reg('R3'):#x}, stack={[hex(w) for w in stack]}")
 
     def sub(entry, *args):
         set_reg("LR", STOP)
@@ -247,18 +260,18 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
         if target == resume:
             require(reg("CPSR") == status, "IRQ did not restore the preempted CPU mode")
 
-    run(0x200052A8, MAIN_READY)
+    run(0x200052A8, MAIN_READY + ui_start_shift)
     main_thread = snapshot("stock-main")
     require(value(main_thread+2, 1) == 0xF4 and value(0x203804BC) != 0,
             "original main thread startup did not register")
     if graphics:
         set_reg("LR", STOP)
-        run(0x20145244, STOP, limit=8_000_000)
+        run(0x20145244+audio_shift, STOP, limit=8_000_000)
 
-    sub(0x2013CD54)
+    sub(0x2013CD54 + audio_shift)
     if graphics:
-        sub(0x2013CD98)  # Stock framebuffer completion semaphore.
-    run(0x2007B29C, 0x2007B2B0)
+        sub(0x2013CD98+audio_shift)  # Stock framebuffer completion semaphore.
+    run(0x2007B29C + ui_start_shift, 0x2007B2B0 + ui_start_shift)
     ui_thread = value(UI_HANDLE)
     require(ui_thread != main_thread and value(ui_thread+2, 1) == 0xEE and value(CURRENT) == main_thread,
             "UI creation preempted the main thread or has the wrong priority")
@@ -288,10 +301,10 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
     if extension or device_panel:
         seed_vfos(cpu, pair=(7_074_000, 7_047_500) if panel_experiment else (7_030_000, 7_035_000))
         if live:
-            sub(INIT_RANGES)
+            sub(INIT_RANGES+(192 if e140 else 0))
         if graphics:
-            cpu.mem_write(PROFILES[digest].language_bytes, b"\x01\x01")
-            sub(0x2001DEA8)  # Publish the fixture VFO through the stock selector.
+            cpu.mem_write(0x203eae44 if e140 else PROFILES[digest].language_bytes, bytes(2) if e140 else b"\x01\x01")
+            sub(0x2001DEA8-(244 if e140 else 0))  # Publish the fixture VFO through the stock selector.
         for address in (MODE_UI_A, MODE_VFO_A):
             cpu.mem_write(address, b"\x10" if panel_experiment else b"\x20")
         cpu.mem_write(AUDIO_GATE, b"\x01")
@@ -331,12 +344,12 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
         if not screen or stress is not None:
             open_cw()
 
-    sub(0x20104888)
+    sub(0x20104888 + audio_shift)
     set_reg("R6", 0)
-    run(0x200D4E8C, AUDIO_READY)  # Load the original loop's locals.
+    run(0x200D4E8C + audio_shift, AUDIO_READY + audio_shift)  # Load the original loop's locals.
     require(snapshot("initial-pass-without-interrupt") == main_thread and value(FIRST, 1) == 1,
             "original first-pass path did not bypass the wait")
-    run(AUDIO_READY, TIMERS_CLEARED)
+    run(AUDIO_READY + audio_shift, TIMERS_CLEARED + audio_shift)
     require(value(COUNT, 2) == 0, "original loop did not clear first-pass and timer count")
 
     if audio_experiment:
@@ -345,15 +358,15 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
         from tools.probe_705_cw_field_rtx import exercise
         return exercise(field_rtx, cpu, run, irq, reg, value)
 
-    run(LOOP, SEM_WAIT)
+    run(LOOP+audio_shift, SEM_WAIT+audio_shift)
     require(snapshot("main-blocked-ui-waiting") == ui_thread and value(WAITER, 1) == 1,
             "audio wait did not schedule UI")
     if extension:
-        run(SEM_WAIT, worker_wait)
+        run(SEM_WAIT+audio_shift, worker_wait)
         require(snapshot("worker-starts-on-own-thread") == worker_thread, "worker did not run as RTX thread")
-        run(worker_wait, IDLE)
+        run(worker_wait, idle_entry)
     else:
-        run(SEM_WAIT, IDLE)
+        run(SEM_WAIT+audio_shift, idle_entry)
     idle_thread = snapshot("both-tasks-blocked")
     require(idle_thread not in (main_thread, ui_thread), "UI did not block on its semaphore")
 
@@ -362,7 +375,7 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
         irq(TIMER, background)
         require(value(COUNT, 1) == count and value(WAITER, 1) == 0 and sgis[before:] == [0x10000],
                 f"timer did not signal the stock kernel on count {count}: {sgis[before:]}")
-        irq(0, LOOP)
+        irq(0, LOOP+audio_shift)
 
     if extension or device_panel:
         waveform = audio("CQ TEST 123")
@@ -411,31 +424,31 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
                 cpu.mem_write(DMAC+0x424, pack("<I", 1))  # Modeled DMA completion is acknowledged.
             rounds += 1
 
-        def capture(part, background=IDLE, before_pcm=None, *, mailbox_key=None, rf_blocks=()):
+        def capture(part, background=idle_entry, before_pcm=None, *, mailbox_key=None, rf_blocks=()):
             nonlocal queued_peak
             for offset in range(0, len(part), 12):
                 index = offset//12
                 dma_group(part[offset:offset+12], background, rf_blocks[index] if index < len(rf_blocks) else None)
             timer_wake(1, background)
-            run(LOOP, background)
+            run(LOOP+audio_shift, background)
             timer_wake(2, background)
             if rf_scope:
                 # shortcut: local RF pipeline only; the board-control queue is not modeled.
-                run(LOOP, AUDIO_READY)
-                run(AUDIO_READY+12, TIMERS_CLEARED)
+                run(LOOP+audio_shift, AUDIO_READY+audio_shift)
+                run(AUDIO_READY+audio_shift+12, TIMERS_CLEARED+audio_shift)
             else:
-                run(LOOP, TIMERS_CLEARED)
+                run(LOOP+audio_shift, TIMERS_CLEARED+audio_shift)
             if mailbox_key is not None:
                 cpu.mem_write(MAILBOX, bytes((0x20 if mailbox_key else 0,)))
                 cpu.mem_write(MAILBOX+0x40, b"\x01")
             # shortcut: the hardware mailbox is not modeled; the stock refresh
             # overwrites the touch fixture, which is restored for explicit input.
-            run(TIMERS_CLEARED, PCM_STEP)
+            run(TIMERS_CLEARED+audio_shift, PCM_STEP+audio_shift)
             if mailbox_key is not None:
                 require(value(KEY_ACTIVITY, 1) == mailbox_key, "stock main loop did not parse the DSP key input")
             if before_pcm:
                 before_pcm()
-            run(PCM_STEP, PCM_DONE)
+            run(PCM_STEP+audio_shift, PCM_DONE+audio_shift)
             if device_panel: return
             state = read_session(cpu)
             queued_peak = max(queued_peak, state["queued"])
@@ -451,15 +464,15 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
             set_reg("CPSR", 0x92)
             before = len(sgis)
             if vline:
-                sub(0x2013CDD8)  # Stock LCD completion callback, including request retirement.
+                sub(0x2013CDD8+audio_shift)  # Stock LCD completion callback, including request retirement.
             else:
-                require(sub(0x202D47BD, value(0x20380CD4)) == 0, "frame completion semaphore failed")
+                require(sub(0x202D47BD+(224 if e140 else 0), value(0x20380CD4)) == 0, "frame completion semaphore failed")
             require(sgis[before:] == [0x10000], "frame completion did not signal UI")
             set_reg("CPSR", idle_status)
-            set_reg("PC", IDLE)
-            irq(0, SEM_WAIT)
+            set_reg("PC", idle_entry)
+            irq(0, SEM_WAIT+audio_shift)
             require(value(CURRENT) == ui_thread, "stock UI did not finish its frame")
-            run(SEM_WAIT, IDLE)
+            run(SEM_WAIT+audio_shift, idle_entry)
 
         def live_trial():
             # Seed only the power-on LCD conditions, as in stock_menu_navigation.
@@ -473,8 +486,8 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
             for n in range(2):
                 slot = 0x209D0000 + n*0x1000
                 cpu.mem_write(0x205E022C + n*16, pack("<I", slot))
-                sub(0x202235A4, 0, n)
-            set_reg("PC", IDLE)
+                sub(0x202235A4+audio_shift, 0, n)
+            set_reg("PC", idle_entry)
             dial, dial_reads, scans, updates = 0, 0, 0, 0
             key0 = key1 = 0
             touch_sample = TOUCH_UP
@@ -516,15 +529,15 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
                 if len(tuning_writes) < 50:
                     tuning_writes.append([tick, hex(reg("PC")), hex(addr), size, data])
 
-            cpu.hook_add(uc.UC_HOOK_CODE, panel, begin=TOUCH_POLL, end=TOUCH_POLL)
+            cpu.hook_add(uc.UC_HOOK_CODE, panel, begin=TOUCH_POLL+ui_start_shift, end=TOUCH_POLL+ui_start_shift)
             cpu.hook_add(uc.UC_HOOK_MEM_READ, encoder, begin=0xFCFF0386, end=0xFCFF0386)
-            cpu.hook_add(uc.UC_HOOK_CODE, trace_update, begin=UI_UPDATE_CALL, end=UI_UPDATE_CALL)
+            cpu.hook_add(uc.UC_HOOK_CODE, trace_update, begin=UI_UPDATE_CALL+audio_shift, end=UI_UPDATE_CALL+audio_shift)
             for addr in (0x20380C8C, 0x20380C98):
                 cpu.hook_add(uc.UC_HOOK_MEM_WRITE, request, begin=addr, end=addr)
             for addr in (0x20380714, 0x203EBC2F):
                 cpu.hook_add(uc.UC_HOOK_MEM_WRITE, tuning, begin=addr, end=addr)
 
-            def step(part=b"", rf_blocks=(), *, keys=None):
+            def step(part=b"", rf_blocks=(), *, keys=None, audio_input=None):
                 nonlocal tick, last, wave_peak, key0, key1
                 if keys is not None:
                     key0,key1 = keys
@@ -534,9 +547,16 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
                 surface.image_draws.clear()
                 # Drive the original 1 ms RTX clock (hold timers, task timeouts).
                 for _ in range(4):
-                    irq(134, IDLE)
+                    irq(134, idle_entry)
                 capture(part or bytes(72), rf_blocks=rf_blocks)
-                run(PCM_DONE, UI_UPDATE_CALL+4, limit=12_000_000)
+                if audio_input:
+                    # Additional DMA samples on the main task before its next yield.
+                    frame = cpu.context_save()
+                    try:
+                        audio_input(sub)
+                    finally:
+                        cpu.context_restore(frame)
+                run(PCM_DONE+audio_shift, UI_UPDATE_CALL+audio_shift+4, limit=12_000_000)
                 state = dict(cw=bool(extension and read_session(cpu)["active"]), page=value(0x203807DD, 1),
                              scope_layout=value(PAGE+3, 1), popup=value(0x204BD0F4, 1), key=value(0x20380431, 1))
                 if not panel_states or state != panel_states[-1]["state"]:
@@ -549,7 +569,7 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
                     sub(0x2011F53C)
                     sub(0x2012022C)
                     sub(0x2012038C)
-                run(0x200D5230, IDLE, limit=12_000_000)
+                run(0x200D5230+audio_shift, idle_entry, limit=500_000_000 if e140 and device_panel else 12_000_000)
                 if value(0x20380CBE, 1):
                     if overlay_frame:
                         overlay_frame()

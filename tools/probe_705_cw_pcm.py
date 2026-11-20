@@ -27,10 +27,10 @@ DSP_TX = 0x10
 KEY_ACTIVITY = 0x203E1E68  # Populated by the original DSP status parser before PCM.
 
 
-def feed_dsp_tx(cpu, active):
+def feed_dsp_tx(cpu, active, mirror=MIRROR_DSP_STATUS):
     raw = word(cpu, RAW_DSP_STATUS) & ~DSP_TX
     cpu.mem_write(RAW_DSP_STATUS, pack("<I", raw | (DSP_TX if active else 0)))
-    call(cpu, MIRROR_DSP_STATUS)
+    call(cpu, mirror)
     require(bool(byte(cpu, DSP_STATUS) & DSP_TX) == active, "stock DSP mirror did not update")
 
 
@@ -117,7 +117,7 @@ def probe(cpu, phases, code, entry, rec_enable, gate, *, after_first_pcm=None):
                 stages=stages)
 
 
-def simulated_gpio(cpu, *, extra=()):
+def simulated_gpio(cpu, *, extra=(), rom=lambda pc: pc):
     cpu.mem_map(0xFCFE3000, 4096)
     cpu.mem_write(PORT_MODE, pack("<H", 0x40))
     cpu.mem_write(PORT_PTT, pack("<H", 0x2000))
@@ -131,7 +131,7 @@ def simulated_gpio(cpu, *, extra=()):
         accesses.add(entry)
 
     cpu.hook_add(uc.UC_HOOK_MEM_READ | uc.UC_HOOK_MEM_WRITE, io_guard, begin=0xFCFE3000, end=0xFCFE3FFF)
-    call(cpu, PTT_INIT)
+    call(cpu, rom(PTT_INIT))
     return accesses
 
 

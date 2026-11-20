@@ -85,7 +85,7 @@ def install_guest_picker(guest, main):
 def frame(guest):
     guest.surface.events.clear()
     guest.surface.pixel_writes.clear()
-    call(guest.cpu, FRAME_DRAW, instruction_limit=12_000_000, timeout_us=10_000_000)
+    call(guest.cpu, guest.rom(FRAME_DRAW), instruction_limit=12_000_000, timeout_us=10_000_000)
     surface = guest.surface
     surface.select_target()
     labels = ["".join(chr(g["key"]) for g in event["glyphs"]).strip() for event in surface.events]
@@ -93,7 +93,7 @@ def frame(guest):
 
 
 def tick(guest):
-    call(guest.cpu, UPDATE, instruction_limit=2_000_000)
+    call(guest.cpu, guest.rom(UPDATE), instruction_limit=2_000_000)
 
 
 def enter(guest):

@@ -2,11 +2,11 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=4"><script type="module" src="converter/app.js?v=6"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=4"><script type="module" src="converter/app.js?v=7"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
-<p data-en="Select the original Japanese 1.40 DAT to build CW, SSTV and FT8/FT4 firmware locally. Your file stays in this browser.">选择日版 1.40 原厂 DAT，在本机生成 CW、SSTV 与 FT8／FT4 固件。原厂文件只在浏览器内处理。</p>
+<p data-en="Select the original IC-705 1.40 DAT to build CW, SSTV and FT8/FT4 firmware locally. Your file stays in this browser.">选择 IC-705 的 1.40 原厂 DAT，在本机生成 CW、SSTV 与 FT8／FT4 固件。原厂文件只在浏览器内处理。</p>
 <section class="walkthrough" aria-labelledby="demo-heading">
 <div><h2 id="demo-heading" data-en="Radio simulator walkthrough">电台模拟操作演示</h2>
 <label for="demo-kind" data-en="Walkthrough">演示内容</label>
@@ -20,14 +20,14 @@
 <p data-en="This is unofficial firmware. Read Icom’s terms before downloading or modifying its files. Flashing may erase settings or leave the radio unable to start. Back up your settings, check the model and region, and keep power stable.">这是非官方固件。下载或修改原厂文件前，请阅读 Icom 使用条款。刷写可能导致设置丢失或电台无法启动。请先备份设置，核对机型和地区，并确保供电稳定。</p>
 <p data-en="You decide whether to download, modify or flash the firmware and assume the associated risks. The project offers no warranty or repair service.">是否下载、修改和刷写由你自行决定，相关风险由你承担。本项目不提供保修或维修服务。</p>
 <a href="https://www.icom.co.jp/support/drivers/8603/" data-en="Icom download terms ↗">查看 Icom 下载条款 ↗</a></aside>
-<section><dl><div><dt data-en="Required input">原厂底包</dt><dd data-en="IC-705 Japan 1.40">IC-705 日版 1.40</dd></div><div><dt data-en="Target version">目标版本</dt><dd id="version">…</dd></div></dl>
-<p class="hint" data-en="Japan: use 705J140.dat. Europe and US: both use 705E140.dat. A build of this project for that file is not yet available.">日版请选择 705J140.dat。欧版、美版共用 705E140.dat，本项目尚未发布适配该文件的补丁。</p>
+<section><dl><div><dt data-en="Required input">原厂底包</dt><dd data-en="IC-705 1.40 · Japan / Europe / US">IC-705 1.40 · 日版／欧版／美版</dd></div><div><dt data-en="Target version">目标版本</dt><dd id="version">…</dd></div></dl>
+<p class="hint" data-en="Japan: use 705J140.dat. Europe and US: both use 705E140.dat. The converter detects the region from the file contents.">日版请选择 705J140.dat。欧版、美版共用 705E140.dat，网页按文件内容自动匹配对应补丁。</p>
 <label for="source" data-en="Choose the original firmware">选择原厂固件</label>
 <div class="file"><input id="source" type="file" accept=".dat" disabled><label for="source" data-en="Choose DAT file">选择 DAT 文件</label><span id="filename"></span></div>
-<a href="https://www.icom.co.jp/support/drivers/8603/" data-en="Get Japanese firmware 1.40 from Icom ↗">下载 Icom 日版 1.40 原厂固件 ↗</a>
+<a href="https://www.icom.co.jp/support/drivers/8603/" data-en="Get Japanese firmware 1.40 from Icom ↗">下载 Icom 日版 1.40 原厂固件 ↗</a> · <a href="https://www.icomjapan.com/support/firmware_driver/4422/" data-en="Get European/US firmware 1.40 from Icom ↗">下载 Icom 欧／美版 1.40 原厂固件 ↗</a>
 <p><button id="build" disabled data-en="Build and download">转换并下载</button></p><p id="status" role="status" aria-live="polite"></p>
-<a id="save" hidden download="705J140.dat" data-en="Save 705J140.dat ↓">手动保存 705J140.dat ↓</a>
-<p class="hint"><span data-en="Save the generated file on the SD card at">生成文件在 SD 卡上的保存路径为</span> <code>IC-705/705J140.dat</code></p></section>
+<a id="save" hidden download>手动保存</a>
+<p class="hint" id="sd-path" hidden><span data-en="Save the generated file on the SD card at">生成文件在 SD 卡上的保存路径为</span> <code id="output-path"></code></p></section>
 <section class="details"><h2 data-en="Current features">当前版本功能</h2><ul id="features"></ul></section>
 <section class="details"><h2 data-en="Release history">版本更新日志</h2><div id="history"></div></section>
 <p><a href="converter/ftx-notices.txt" data-en="FT8/FT4 third-party notices">FT8／FT4 第三方许可</a></p>

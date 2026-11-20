@@ -117,8 +117,9 @@ def compose(p):
     _, raw = frame(p)
     # The panel fixture supplies the stock compositor's draw and commit stages.
     c = p.cpu
-    c.emu_start(SITES["frame"], SITES["frame"] + 4, count=12000000)
-    assert c.reg_read(arm.UC_ARM_REG_PC) == SITES["frame"] + 4
+    frame_site = p.rom(SITES["frame"])
+    c.emu_start(frame_site, frame_site + 4, count=12000000)
+    assert c.reg_read(arm.UC_ARM_REG_PC) == frame_site + 4
     p.surface.select_target()
     picture = Image.frombytes("RGBA", (480, 272), bytes(p.surface.pixels)).convert(
         "RGB"
@@ -132,12 +133,13 @@ def compose(p):
     ] + bitmap_messages(p.surface), picture
 
 
-def fixture(cpu, *, map_dma=True):
+def fixture(cpu, *, map_dma=True, e140=False):
     with TemporaryDirectory() as tmp:
         elf = Path(tmp) / "dma.elf"
         subprocess.run(
             [
                 CC,
+                *(["-DIC705_E140"] if e140 else []),
                 "-Os",
                 "-marm",
                 "-mcpu=cortex-a9",
@@ -161,11 +163,11 @@ def fixture(cpu, *, map_dma=True):
     return feed
 
 
-def gps(c, s):
+def gps(c, s, byte_rx=BYTE_RX):
     s %= 86400
     stamp = f"{s // 3600:02d}{s // 60 % 60:02d}{s % 60:02d}"
     for b in nmea(RMC.format(time=stamp)):
-        call(c, BYTE_RX, b)
+        call(c, byte_rx, b)
 
 
 STACK_TOP = 0x2E0000

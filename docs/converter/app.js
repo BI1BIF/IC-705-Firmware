@@ -1,14 +1,14 @@
 const el = id => document.getElementById(id);
 let lang = "zh", release, downloadUrl, state = "", failed = false;
 try { if (localStorage.getItem("ic705-language") === "en") lang = "en"; } catch {}
-let received = 0;
+let received = 0, notes;
+const releases = [];
 const messages = {
   fetching:["正在下载转换补丁","Downloading the patch"],
   network:["补丁下载中断或服务器未响应。请检查网络，再点“转换并下载”重试。","The patch download stalled or failed. Check your connection, then select Build and download to retry."],
   unsupported:["请使用支持本地解压的新版浏览器。","Use a current browser with gzip support."],
   loadError:["无法加载版本信息，请刷新页面。","Could not load the release. Refresh to retry."],
-  wrongBase:["底包不匹配，请选择未修改的日版 1.40 DAT。","Select the unmodified Japanese 1.40 DAT."],
-  e140:["已识别欧版／美版 1.40 原厂固件。当前 CW、SSTV 和 FT8／FT4 补丁仅适用于日版电台。","European/US stock firmware 1.40 recognized. The current CW, SSTV and FT8/FT4 patch is available only for Japanese radios."],
+  wrongBase:["底包不匹配。请选择 IC-705 原厂 1.40 的 705J140.dat 或 705E140.dat。","Choose the original IC-705 1.40 file, 705J140.dat or 705E140.dat."],
   badOutput:["补丁或输出校验失败，请刷新重试。","Verification failed. Refresh and retry."],
   checking:["正在校验原厂文件…","Checking the original firmware…"],
   readError:["无法读取文件，请重新选择原厂 DAT。","Could not read the file. Select the original DAT again."],
@@ -38,10 +38,18 @@ function render() {
   for (const code of ["zh","en"]) el(code).setAttribute("aria-pressed", String(code === lang));
   filename();
   setState(state);
-  el("version").textContent = release?.version || (failed ? (lang === "en" ? "Unavailable" : "不可用") : "…");
-  if (!release?.notes) return;
-  el("features").replaceChildren(...release.notes.features[lang].map(line => node("li", line)));
-  el("history").replaceChildren(...release.notes.history.map((row, index) => {
+  el("version").textContent = release?.version || (failed ? (lang === "en" ? "Unavailable" : "不可用") :
+    (lang === "en" ? "Select a file" : "请选择底包"));
+  const name = release?.filename;
+  el("sd-path").hidden = !name;
+  if (name) {
+    el("save").download = name;
+    el("save").textContent = lang === "en" ? "Save " + name + " ↓" : "手动保存 " + name + " ↓";
+    el("output-path").textContent = "IC-705/" + name;
+  }
+  if (!notes) return;
+  el("features").replaceChildren(...notes.features[lang].map(line => node("li", line)));
+  el("history").replaceChildren(...notes.history.map((row, index) => {
     const entry = document.createElement("article");
     entry.className = "entry";
     entry.append(node("h3", row.version + (index ? "" : lang === "en" ? " · Latest" : " · 最新版")), node("p", row[lang]));
@@ -124,31 +132,31 @@ function clearDownload() {
   save.removeAttribute("href");
 }
 
-// Icom distributes the same stock E140 DAT in Europe and the US.
-const e140 = {size: 12279020, sha256: "132383f8388641d02d0fadaccf9878d01a1960fa77a028328f0eb33dcfbc147b"};
 source.onchange = async () => {
   clearDownload();
-  filename();
-  setState("");
-  const file = source.files[0];
+  release = null;
   build.disabled = true;
+  setState("");
+  render();
+  const file = source.files[0];
   if (!file) return;
-  if (file.size === e140.size) {
-    setState("checking");
-    try {
-      const hash = await sha256(await file.arrayBuffer());
-      if (file === source.files[0]) setState(hash === e140.sha256 ? "e140" : "wrongBase");
-    } catch {
-      if (file === source.files[0]) setState("readError");
-    }
-    return;
+  if (!releases.some(r => r.size === file.size)) return setState("wrongBase");
+  setState("checking");
+  try {
+    const hash = await sha256(await file.arrayBuffer());
+    if (file !== source.files[0]) return;
+    release = releases.find(r => r.stock === hash && r.size === file.size);
+    build.disabled = !release;
+    setState(release ? "" : "wrongBase");
+    render();
+  } catch {
+    if (file === source.files[0]) setState("readError");
   }
-  build.disabled = false;
 };
 
 build.onclick = async () => {
   const file = source.files[0];
-  if (!file) return;
+  if (!file || !release) return;
   clearDownload();
   source.disabled = build.disabled = true;
   try {
@@ -178,10 +186,14 @@ build.onclick = async () => {
 
 try {
   if (!globalThis.DecompressionStream || !globalThis.crypto?.subtle) throw new Error("unsupported");
-  release = await (await get("converter/latest.json")).json();
-  if (![release.stock, release.target, release.patchHash].every(s => /^[0-9a-f]{64}$/.test(s)) ||
-      release.patch !== release.patchHash + ".xor.gz" || !Number.isSafeInteger(release.size) ||
-      release.size <= 0 || !release.version) throw new Error("loadError");
+  for (const [manifest, filename] of [["latest.json", "705J140.dat"], ["e140.json", "705E140.dat"]]) {
+    const item = await (await get("converter/" + manifest)).json();
+    if (![item.stock, item.target, item.patchHash].every(s => /^[0-9a-f]{64}$/.test(s)) ||
+        item.patch !== item.patchHash + ".xor.gz" || !Number.isSafeInteger(item.size) ||
+        item.size <= 0 || !item.version) throw new Error("loadError");
+    releases.push({...item, filename});
+  }
+  notes = releases[0].notes;
   render();
   source.disabled = false;
 } catch (error) {

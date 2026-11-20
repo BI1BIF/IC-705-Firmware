@@ -37,13 +37,14 @@ from tools.verify_705_ftx_rx import (
 )
 
 
-def mount_station_card(cpu, sy):
+def mount_station_card(cpu, sy, rom=lambda pc: pc):
     files, opened, pending, faults = {}, {}, [], {}
     paths = {r"C:\IC-705\FTX0.CFG", r"C:\IC-705\FTX1.CFG", r"C:\IC-705\FTLOG.ADI"}
     def operation(c, address, *_):
         a,b,n,d = (c.reg_read(reg) for reg in (
             arm.UC_ARM_REG_R0,arm.UC_ARM_REG_R1,arm.UC_ARM_REG_R2,arm.UC_ARM_REG_R3))
         rc=0
+        address = original[address]
         if address==0x202D48C0:
             handler=val(c,a)
             if handler&~1 != sy["log_worker"]&~1: return
@@ -80,7 +81,8 @@ def mount_station_card(cpu, sy):
         c.reg_write(arm.UC_ARM_REG_R0,rc)
         c.reg_write(arm.UC_ARM_REG_PC,c.reg_read(arm.UC_ARM_REG_LR))
 
-    for pc in (0x202D48C0,0x2023FEC8,0x2023FEE4,0x2023FF00,0x2023FF18,0x2023FF64):
+    original = {rom(pc): pc for pc in (0x202D48C0,0x2023FEC8,0x2023FEE4,0x2023FF00,0x2023FF18,0x2023FF64)}
+    for pc in original:
         cpu.hook_add(uc.UC_HOOK_CODE,operation,begin=pc,end=pc)
     cpu.mem_write(0x20380172,bytes([3]))
     def pump():
@@ -88,27 +90,29 @@ def mount_station_card(cpu, sy):
     return files,pump,faults
 
 
-def replay(dat, ft4):
+def replay(dat, ft4, *, e140=None):
     mode = "FT4" if ft4 else "FT8"
-    folder = OUT / mode
-    folder.mkdir(exist_ok=True)
-    p = SettingsGuest(
-        load((ROOT / "firmware/705J140.dat").read_bytes()), front_panel=True
-    )
+    folder = (e140.folder if e140 else OUT) / mode
+    folder.mkdir(parents=True, exist_ok=True)
+    if e140:
+        p, image = e140.station_guest(dat)
+    else:
+        p = SettingsGuest(load((ROOT / "firmware/705J140.dat").read_bytes()), front_panel=True)
+        image = bytes(decode_main(dat)[1])
+        p.cpu.mem_write(BASE, image)
+        p.cpu.ctl_remove_cache(BASE, BASE + len(image))
+        menu_init(p.cpu, image)
+        map_atlas(p.cpu, dat)
     c, sy = p.cpu, symbols(OUT / "rx.elf")
-    image = bytes(decode_main(dat)[1])
-    c.mem_write(BASE, image)
-    c.ctl_remove_cache(BASE, BASE + len(image))
-    menu_init(c, image)
-    map_atlas(c, dat)
+    rom = p.rom
     c.mem_map(DMAC, 4096)
-    simulated_gpio(c)
-    call(c, INIT_RANGES)
+    simulated_gpio(c, rom=rom)
+    call(c, rom(INIT_RANGES))
     seed_vfos(c, (14074000, 14080000))
-    call(c, SELECT_VFO[0])
+    call(c, rom(SELECT_VFO[0]))
     c.mem_write(p.language_address, bytes(2))
     p.render()
-    call(c, 0x200F1F04, 1)
+    call(c, rom(0x200F1F04), 1)
     from tools.probe_705_sstv_picture import tick
 
     tick(p)
@@ -136,7 +140,7 @@ def replay(dat, ft4):
 
     def request(expected):
         for pc in (BUILD_REQUEST, FILTER_REQUEST, 0x20109E74):
-            call(c, pc)
+            call(c, rom(pc))
         flags = [val(c, a) for a in (REQUEST, FILTERED)]
         assert [bool(f & 0x8000) for f in flags] == [expected] * 2, (
             flags,
@@ -147,7 +151,7 @@ def replay(dat, ft4):
         assert bool(val(c, 0x203806F4, 1) & 128) == expected
 
     def route(armed):
-        call(c, 0x20060C74)
+        call(c, rom(0x20060C74))
         actual = (val(c, 0x203E1E60, 1), val(c, 0x20380875, 1))
         assert actual == ((8, 2) if armed else (1, 0)), (actual, armed)
 
@@ -160,7 +164,7 @@ def replay(dat, ft4):
         cpu.reg_write(arm.UC_ARM_REG_R0, 0)
         cpu.reg_write(arm.UC_ARM_REG_PC, cpu.reg_read(arm.UC_ARM_REG_LR))
 
-    c.hook_add(uc.UC_HOOK_CODE, wake, begin=0x202D4850, end=0x202D4850)
+    c.hook_add(uc.UC_HOOK_CODE, wake, begin=rom(0x202D4850), end=rom(0x202D4850))
     p.click(37, 32)
     tick(p)
     compose(p)
@@ -174,15 +178,15 @@ def replay(dat, ft4):
     assert get("state") == 2 and get("ftx_ft4") == ft4 and "USB-D" in compose(p)[0]
     c.mem_write(0x203EAAC7, bytes([128]))
     c.mem_write(0x203EAAC8, bytes(2))
-    call(c, 0x200052ED, 0x20367B78 + 0x87C, 0x2038087C, 20)
-    feed_dsp_tx(c, False)
+    call(c, 0x200052ED, (0x20367B78 if e140 is None else e140.defaults) + 0x87C, 0x2038087C, 20)
+    feed_dsp_tx(c, False, rom(0x200D4A28))
     attr("enabled", 1)
     beeps = []
     c.hook_add(
         uc.UC_HOOK_CODE,
         lambda cpu, *_: beeps.append(cpu.reg_read(arm.UC_ARM_REG_R0)),
-        begin=0x2007D478,
-        end=0x2007D478,
+        begin=rom(0x2007D478),
+        end=rom(0x2007D478),
     )
 
     def tap(x, y, accepted=True):
@@ -296,10 +300,10 @@ def replay(dat, ft4):
         tap(442,104)
         assert get("stage")==0 and reason in compose(p)[0]
         c.mem_write(addr,bytes([prior]))
-    call(c, 0x20103914, 0, 1)
+    call(c, rom(0x20103914), 0, 1)
     tap(442, 104)
     assert get("stage") == 0
-    call(c, 0x20103914, 0, 0)
+    call(c, rom(0x20103914), 0, 0)
     tap(442, 104)
     assert get("stage") == 1, (
         get("stage"),
@@ -316,7 +320,7 @@ def replay(dat, ft4):
                 0x20380714,
             )
         ],
-        call(c, 0x201031DC, 0),
+        call(c, rom(0x201031DC), 0),
         panel("failed-arm"),
     )
     assert "WAIT TX A" in panel("queued")
@@ -341,7 +345,7 @@ def replay(dat, ft4):
     assert get("stage") == 2
     c.reg_write(arm.UC_ARM_REG_R4, DMAC)
     c.reg_write(arm.UC_ARM_REG_R5, 288)
-    c.emu_start(0x200FEF1C, 0x200FEF40)
+    c.emu_start(rom(0x200FEF1C), rom(0x200FEF40))
     seq = 0
 
     def audio():
@@ -349,7 +353,7 @@ def replay(dat, ft4):
         bank = seq % 2
         seq += 1
         c.mem_write(DMAC + 0x124, pack("<I", 0x41 if bank else 0xC1))
-        call(c, 0x200FFD48, timeout_us=0)
+        call(c, rom(0x200FFD48), timeout_us=0)
         words = c.mem_read(0x20400A40 + bank * 288, 288)
         out = bytearray(72)
         out[::2], out[1::2] = words[6::8], words[7::8]
@@ -362,7 +366,7 @@ def replay(dat, ft4):
         clock(edge)
         request(True)
         route(True)
-        feed_dsp_tx(c, True)
+        feed_dsp_tx(c, True, rom(0x200D4A28))
         clock(edge + 500)
         audio()
         assert get("stage") == 3
@@ -375,7 +379,7 @@ def replay(dat, ft4):
             tap(442, 104)
         assert not any(audio()) and not any(audio())
         request(False)
-        feed_dsp_tx(c, False)
+        feed_dsp_tx(c, False, rom(0x200D4A28))
         request(False)
         route(False)
         assert get("stage") == 0
@@ -395,11 +399,11 @@ def replay(dat, ft4):
 
     assert not any(audio())
     # Cancel while keyed. All audio stays silent until the DSP acknowledges RX.
-    feed_dsp_tx(c, True)
+    feed_dsp_tx(c, True, rom(0x200D4A28))
     tap(443, 104)
     request(False)
     assert not any(audio())
-    feed_dsp_tx(c, False)
+    feed_dsp_tx(c, False, rom(0x200D4A28))
     request(False)
     route(False)
     choose_station()
@@ -409,7 +413,7 @@ def replay(dat, ft4):
     route(True)
     clock(start + 2 * period + 601)
     request(False)
-    feed_dsp_tx(c, False)
+    feed_dsp_tx(c, False, rom(0x200D4A28))
     request(False)
     assert get("stage") == 0
     clock(start + 3 * period)
@@ -419,7 +423,7 @@ def replay(dat, ft4):
     clock(start)
     request(True)
     route(True)
-    feed_dsp_tx(c, True)
+    feed_dsp_tx(c, True, rom(0x200D4A28))
     pcm = array("h")
     for i in range(period * 48 // 36):
         store(0x20381E08, start + i * 36 // 48)
@@ -431,7 +435,7 @@ def replay(dat, ft4):
             break
     assert get("stage") == 5 and get("attempts") == 1
     request(False)
-    feed_dsp_tx(c, False)
+    feed_dsp_tx(c, False, rom(0x200D4A28))
     request(False)
     route(False)
     c.mem_write(0x203809c4,b"\0")
@@ -531,7 +535,7 @@ def replay(dat, ft4):
     clock(start + period - 100)
     native("ft_station_tick")
     choose_station()
-    records, pump, faults = mount_station_card(c,sy)
+    records, pump, faults = mount_station_card(c,sy,rom)
     tap(442,213 if ft4 else 136)
     tap(87, 230)  # AUTO SEQ
     tap(441, 247)
@@ -677,9 +681,9 @@ def replay(dat, ft4):
     c.mem_write(0x2038079A,bytes.fromhex("26010104003015"))
     c.mem_write(sy["pref"]+22,bytes([4]))
     assert native("utc_stamp",logptr)==1 and bytes(c.mem_read(logptr,14))==b"20251231233015"
-    from tools.verify_705_ftx_rx import gps,GPS_INIT,GPS_MODE
-    c.mem_write(GPS_MODE,bytes([1]));call(c,GPS_INIT)
-    for second in range(3605,3611):gps(c,second)
+    from tools.verify_705_ftx_rx import gps,BYTE_RX,GPS_INIT,GPS_MODE
+    c.mem_write(GPS_MODE,bytes([1]));call(c,rom(GPS_INIT))
+    for second in range(3605,3611):gps(c,second,rom(BYTE_RX))
     attr("ftx_rtc",0)
     assert native("utc_stamp",logptr)==1 and bytes(c.mem_read(logptr,14))==b"20261114010010"
     return {

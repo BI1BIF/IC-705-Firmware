@@ -58,13 +58,14 @@ def bind_reads(cpu, reads):
     return completed
 
 
-def bind_stock_file(cpu, package):
-    cpu.mem_write(PATH_BUFFER, STOCK_PATH)
+def bind_stock_file(cpu, package, *, rom=lambda pc: pc, path=STOCK_PATH):
+    cpu.mem_write(PATH_BUFFER, path)
     pending, positions = [], []
     opened, pos = False, 0
 
     def sd(c, address, *_):
         nonlocal opened, pos
+        address = original[address]
         r0, r1, r2, r3 = (c.reg_read(reg) for reg in ARG_REGS)
         if address == WAIT_READ:
             require(bool(pending) and (r0, r1) == (REQUEST, 1), "unexpected stock SD completion")
@@ -90,7 +91,7 @@ def bind_stock_file(cpu, package):
             require(not pending, "overlapping stock SD request")
             if address == OPEN:
                 require(not opened and r0 == PATH_BUFFER and r1 == 0
-                        and bytes(c.mem_read(r0, len(STOCK_PATH))) == STOCK_PATH, "unexpected stock file open")
+                        and bytes(c.mem_read(r0, len(path))) == path, "unexpected stock file open")
                 args = (r2, r3)
             else:
                 require(opened and r0 == HANDLE, "unexpected stock SD handle")
@@ -111,7 +112,8 @@ def bind_stock_file(cpu, package):
         c.reg_write(ARG_REGS[0], result)
         c.reg_write(arm.UC_ARM_REG_PC, c.reg_read(arm.UC_ARM_REG_LR))
 
-    for address in (OPEN, CLOSE, SEEK, READ, WAIT_READ):
+    original = {rom(pc): pc for pc in (OPEN, CLOSE, SEEK, READ, WAIT_READ)}
+    for address in original:
         cpu.hook_add(uc.UC_HOOK_CODE, sd, begin=address, end=address)
     return positions, pending, lambda: opened
 

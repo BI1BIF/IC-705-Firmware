@@ -33,7 +33,7 @@ def rgb565(raw):
     return np.stack(((p>>11)*255//31,((p>>5)&63)*255//63,(p&31)*255//31),axis=-1)
 
 
-def mount_card(cpu, directory):
+def mount_card(cpu, directory, rom=lambda pc: pc):
     """Supply read-only file operations. The guest constructs paths and decodes JPEGs."""
     paths={f"C:\\IC-705\\Picture\\{p.name}":p for p in directory.glob("*.jpg")}
     opened=[]
@@ -41,6 +41,7 @@ def mount_card(cpu, directory):
     def service(cpu,pc,*_):
         a,b,c,d=(cpu.reg_read(r) for r in (arm.UC_ARM_REG_R0,arm.UC_ARM_REG_R1,
                                             arm.UC_ARM_REG_R2,arm.UC_ARM_REG_R3))
+        pc = original[pc]
         status=0
         if pc in (0x2023fec8,0x2023ffbc):
             name=bytes(cpu.mem_read(a,64)).split(b"\0")[0].decode("ascii")
@@ -59,13 +60,14 @@ def mount_card(cpu, directory):
         else: handles.pop(a).close()
         cpu.reg_write(arm.UC_ARM_REG_R0,status)
         cpu.reg_write(arm.UC_ARM_REG_PC,cpu.reg_read(arm.UC_ARM_REG_LR))
-    for pc in (0x2023fec8,0x2023ffbc,0x2023ff00,0x2023fee4):
+    original = {rom(pc):pc for pc in (0x2023fec8,0x2023ffbc,0x2023ff00,0x2023fee4)}
+    for pc in original:
         cpu.hook_add(uc.UC_HOOK_CODE,service,begin=pc,end=pc)
     cpu.mem_write(0x20380172,b"\x03")  # mounted card in the isolated panel guest
     return opened,handles
 
 
-def directory_ready(cpu, files):
+def directory_ready(cpu, files, rom=lambda pc: pc):
     # Publish the native directory worker's first cache page, then run its UI notification.
     require(0<len(files)<=4,"fixture must fit one catalog page")
     for i,path in enumerate(files):
@@ -73,11 +75,11 @@ def directory_ready(cpu, files):
         cpu.mem_write(0x2039fa90+36*i,record)
     cpu.mem_write(0x20380820,pack("<I",len(files)))
     cpu.mem_write(0x203807f0,b"\0")
-    call(cpu,0x200eccd0,1)
-    call(cpu,0x200f3a10)
+    call(cpu,rom(0x200eccd0),1)
+    call(cpu,rom(0x200f3a10))
 
 
-def decode_request(cpu):
+def decode_request(cpu, rom=lambda pc: pc):
     # Schedule the JPEG worker from the native UI request; model its asynchronous
     # completion at the UI boundary. Filename, JPEG bytes and pixels stay guest-owned.
     request=bytes(cpu.mem_read(REQUEST,40))
@@ -86,22 +88,23 @@ def decode_request(cpu):
     cpu.mem_write(JPEG+216,request[36:40])
     cpu.mem_write(JPEG+220,b"\x00\x01")
     cpu.mem_write(0x20381724,b"\0")
-    call(cpu,0x2023ac64,instruction_limit=50_000_000,timeout_us=0)
+    call(cpu,rom(0x2023ac64),instruction_limit=50_000_000,timeout_us=0)
     valid=cpu.mem_read(0x20381724,1)[0] and cpu.mem_read(JPEG+13,1)[0]!=255
     cpu.mem_write(REQUEST+128,bytes(cpu.mem_read(JPEG+13,1)))
     cpu.mem_write(REQUEST+132,bytes(cpu.mem_read(JPEG+16,4)))
     cpu.mem_write(REQUEST,bytes([request[0]&~1]))
-    call(cpu,0x200c53f0 if valid else 0x200c5400)
+    call(cpu,rom(0x200c53f0 if valid else 0x200c5400))
     return request[4:32].split(b"\0")[0].decode(),bool(valid)
 
 
-def check_pcm(g,sym,out,mode,raw):
+def check_pcm(g,sym,out,mode,raw,defaults=0x20367b78):
+    rom = g.rom
     from sstv.decode import SSTVDecoder
     cpu=g.cpu
     dma=0xe8200000
     cpu.reg_write(arm.UC_ARM_REG_R4,dma)
     cpu.reg_write(arm.UC_ARM_REG_R5,288)
-    cpu.emu_start(0x200fef1c,0x200fef40)
+    cpu.emu_start(rom(0x200fef1c),rom(0x200fef40))
     banks=[unpack("<III",cpu.mem_read(dma+0x100+i*12,12)) for i in range(2)]
     require(banks==[(0x20400a40,0xe820b018,288),(0x20400b60,0xe820b018,288)],str(banks))
     seq=0
@@ -110,13 +113,13 @@ def check_pcm(g,sym,out,mode,raw):
         bank=seq%2
         seq+=1
         cpu.mem_write(dma+0x124,pack("<I",0x41 if bank else 0xc1))
-        call(cpu,0x200ffd48,timeout_us=0)
+        call(cpu,rom(0x200ffd48),timeout_us=0)
         words=cpu.mem_read(banks[bank][0],288)
         samples=bytearray(72)
         samples[::2],samples[1::2]=words[6::8],words[7::8]
         return samples
     def route(armed):
-        call(cpu,0x20060c74)
+        call(cpu,rom(0x20060c74))
         actual=(cpu.mem_read(0x203e1e60,1)[0],cpu.mem_read(0x20380875,1)[0])
         require(actual==((8,2) if armed else (1,0)),f"unexpected stock MOD routing {actual} armed={armed}")
     def snapshot(): return unpack("<I",cpu.mem_read(sym["tx_snapshot"],4))[0]
@@ -125,13 +128,13 @@ def check_pcm(g,sym,out,mode,raw):
         from tools.probe_705_sstv_arm import counters
         layout=LAYOUTS["705J140"]
         before=counters(cpu,sym)
-        completed(cpu,layout["rec_dma"],dma+0xe4,layout["rec_bank"],0,tuple(range(36)),(0,)*36)
+        completed(cpu,rom(layout["rec_dma"]),dma+0xe4,layout["rec_bank"],0,tuple(range(36)),(0,)*36)
         # Wakeup is handled by the dedicated scheduler test. Drain the actual
         # guest worker here while using the very same panel and TX session.
         thread=bytes(cpu.mem_read(sym["sstv_thread"],4))
         cpu.mem_write(sym["sstv_thread"],bytes(4))
         try:
-            call(cpu,layout["rec_consume"])
+            call(cpu,rom(layout["rec_consume"]))
             call(cpu,sym["sstv_worker"])
         finally:
             cpu.mem_write(sym["sstv_thread"],thread)
@@ -152,15 +155,15 @@ def check_pcm(g,sym,out,mode,raw):
     cpu.mem_write(0x203eaac8,bytes(2))
     cpu.mem_write(0x203eaac7,b"\x80")
     # Restore the five initialized stock gains in the isolated LCD guest.
-    call(cpu,0x200052ed,0x20367b78+0x87c,0x2038087c,20)
+    call(cpu,0x200052ed,defaults+0x87c,0x2038087c,20)
     gains=unpack("<5I",cpu.mem_read(0x2038087c,20))
     require(gains==(65536,43690,32768,21845,10922),"invalid factory modulation gains")
-    feed_dsp_tx(cpu,False)
+    feed_dsp_tx(cpu,False,rom(0x200d4a28))
     def request(expected):
         from tools.probe_705_cw_pcm import BUILD_REQUEST,FILTER_REQUEST,REQUEST,FILTERED
-        call(cpu,BUILD_REQUEST)
-        call(cpu,FILTER_REQUEST)
-        call(cpu,0x20109e74)
+        call(cpu,rom(BUILD_REQUEST))
+        call(cpu,rom(FILTER_REQUEST))
+        call(cpu,rom(0x20109e74))
         flags=cpu.mem_read(0x203806f4,1)[0]
         require(not flags&32 and not cpu.mem_read(0x203809c4,1)[0]&1,"external PTT source asserted")
         require(bool(flags&128)==expected,"factory did not publish the requested TX/RX status")
@@ -173,7 +176,7 @@ def check_pcm(g,sym,out,mode,raw):
     route(True)
     original=tuple((i-18)*113 for i in range(36))
     cpu.mem_write(0x20900000,pack("<36h",*original))
-    call(cpu,0x200ff5c8,0x20900000,1)
+    call(cpu,rom(0x200ff5c8),0x20900000,1)
     require(audio_block()==pack("<36h",*(v*gains[4]>>16 for v in original)),"stock WLAN signal changed")
     cpu.mem_write(0x203806f4,bytes(1))
     cpu.mem_write(0x203eaac8,bytes(2))
@@ -206,7 +209,7 @@ def check_pcm(g,sym,out,mode,raw):
     tick(g); frame(g)
     begin()
     request(True)
-    for _ in range(512): call(cpu,0x20109514,timeout_us=0)
+    for _ in range(512): call(cpu,rom(0x20109514),timeout_us=0)
     request(False)
     tick(g); frame(g)
     require("TX TIMEOUT" in frame(g)[0] and not snapshot(),"request did not time out")
@@ -214,14 +217,14 @@ def check_pcm(g,sym,out,mode,raw):
     request(True)
     route(True)
     require(not any(audio_block()),"PCM before confirmed TX")
-    feed_dsp_tx(cpu,True)
+    feed_dsp_tx(cpu,True,rom(0x200d4a28))
     prefix=audio_block()
     require(any(prefix),"missing header")
     rx_probe(False)
     g.click(365,241)
     request(False)
     require(not any(audio_block()),"button cancel continued sending")
-    feed_dsp_tx(cpu,False)
+    feed_dsp_tx(cpu,False,rom(0x200d4a28))
     require(not any(audio_block()),"cancelled encoder returned samples")
     request(False)
     tick(g); frame(g)
@@ -238,7 +241,7 @@ def check_pcm(g,sym,out,mode,raw):
     begin()
     request(True)
     route(True)
-    feed_dsp_tx(cpu,True)
+    feed_dsp_tx(cpu,True,rom(0x200d4a28))
     require(audio_block()==prefix,"restart changed the header")
     expected=round(48000*(0.910+(36 if mode=="Robot 36" else 256*.446446)))
     filename=out/(mode.replace(" ","-")+".wav")
@@ -256,7 +259,7 @@ def check_pcm(g,sym,out,mode,raw):
     request(False)
     tick(g); labels,_=frame(g)
     require("RELEASE" in labels and not any(audio_block()),"held PTT restarted the frame")
-    feed_dsp_tx(cpu,False)
+    feed_dsp_tx(cpu,False,rom(0x200d4a28))
     tick(g); frame(g)
     require(not snapshot(),"snapshot held after completion")
     rx_probe(True)
@@ -315,7 +318,8 @@ def check_pcm(g,sym,out,mode,raw):
     return result
 
 
-def irq_replay(stock,main,sym,raw,expected):
+def irq_replay(stock,main,sym,raw,expected,board=None):
+    rom = board.rom if board else lambda pc: pc
     from tools.probe_705_rtx_audio import DMA_TIMER,PCM_STEP,TIMERS_CLEARED,probe
     def check(cpu,run,irq,sub,value):
         cpu.mem_write(BASE,main)
@@ -337,32 +341,32 @@ def irq_replay(stock,main,sym,raw,expected):
         require(tx and (tx+CANVAS_BYTES<=rx or rx+CANVAS_BYTES<=tx),"TX snapshot unavailable in native heap")
         require(cpu.mem_read(tx,CANVAS_BYTES)==raw,"native heap copy is incomplete")
         cpu.mem_write(0x203806f4,b"\x80")
-        sub(0x20060c74)
+        sub(rom(0x20060c74))
         require(value(0x20380875,1)==2,"native modulation route failed")
         cpu.mem_write(0x203e1e6c,pack("<I",0x10))
-        sub(0x200d4a28)
+        sub(rom(0x200d4a28))
         cpu.context_restore(saved)
         cpu.mem_write(0x20380874,b"\1")
         for offset in (0xe4,0x424,0x524):
             cpu.mem_write(0xe8200000+offset,pack("<I",1))
-        run(TIMERS_CLEARED,PCM_STEP)
+        run(rom(TIMERS_CLEARED),rom(PCM_STEP))
         captured=bytearray()
         for bank,status in enumerate((0xc1,0x41)):
             cpu.mem_write(0xe8200124,pack("<I",status))
-            irq(DMA_TIMER,PCM_STEP)
+            irq(DMA_TIMER,rom(PCM_STEP))
             words=unpack("<72i",cpu.mem_read(0x20400a40+288*bank,288))
             captured.extend(pack("<36h",*(v>>16 for v in words[1::2])))
         require(captured==expected,"stock IRQ output differs from complete Robot 36 replay")
         cpu.mem_write(0x203e1e6c,bytes(4))
-        sub(0x200d4a28)
+        sub(rom(0x200d4a28))
         sub(sym["sstv_prepare_frame"])
         require(not value(sym["tx_snapshot"]),"released PTT retained native heap allocation")
-        again=sub(0x20127a28,CANVAS_BYTES)
+        again=sub(rom(0x20127a28),CANVAS_BYTES)
         require(again==tx,"native allocator failed to reuse released TX snapshot")
-        sub(0x20127a78,again)
+        sub(rom(0x20127a78),again)
         return dict(rx_canvas=hex(rx),tx_canvas=hex(tx),bytes_each=CANVAS_BYTES,reallocated=True,
                     irq=DMA_TIMER,matched_samples=len(captured)//2)
-    return probe(stock,audio_experiment=check)
+    return probe(stock,application=main if board else None,audio_experiment=check)
 
 
 def check_mode_picker(tap, show):
@@ -391,7 +395,7 @@ def check_mode_picker(tap, show):
     raise ValueError("TX menu cannot return to Robot 36")
 
 
-def exercise(out,clang,installed=None, *, initialize_menus=None):
+def exercise(out,clang,installed=None, *, initialize_menus=None, board=None, dat=None):
     out.mkdir(parents=True,exist_ok=True)
     directory=out/"card"/"IC-705"/"Picture"
     directory.mkdir(parents=True,exist_ok=True)
@@ -399,7 +403,7 @@ def exercise(out,clang,installed=None, *, initialize_menus=None):
     for name,src in (("Bars",im),("Reverse",im.transpose(Image.Transpose.FLIP_LEFT_RIGHT))):
         src.save(directory/(name+".jpg"),quality=94)
     files=[directory/"Bars.jpg",directory/"Reverse.jpg"]
-    stock=load(Path("firmware/705J140.dat").read_bytes())
+    stock=None if board else load(Path("firmware/705J140.dat").read_bytes())
     d6,meta=load_image(D6/"CW-RX3-WAKE2-PC/CW-RX3-WAKE2-PC.ic705sim")
     require(sha256(d6[0]).hexdigest()==D6_SHA,"D6 base differs")
     if installed is None:
@@ -407,18 +411,19 @@ def exercise(out,clang,installed=None, *, initialize_menus=None):
     else:
         main,sym=installed
     with patch.object(renderer,"HEAP_START",0x20700000):
-        g=SettingsGuest(stock,front_panel=True)
+        g=board.station_guest(dat)[0] if board else SettingsGuest(stock,front_panel=True)
+    rom = g.rom
     cpu=g.cpu
     cpu.mem_map(0xe8200000,4096)
     from tools.probe_705_cw_pcm import simulated_gpio
-    simulated_gpio(cpu)
+    simulated_gpio(cpu,rom=rom)
     cpu.mem_write(BASE,main)
     cpu.ctl_remove_cache(BASE,BASE+len(main))
     if initialize_menus:
         initialize_menus(cpu, main)
     cpu.mem_write(sym["sstv_thread"],pack("<I",1))
     cpu.mem_write(g.language_address,bytes(2))
-    opened,handles=mount_card(cpu,directory)
+    opened,handles=mount_card(cpu,directory,rom)
     def show(name=None):
         tick(g)
         labels,screen=frame(g)
@@ -427,7 +432,7 @@ def exercise(out,clang,installed=None, *, initialize_menus=None):
     def tap(x,y): g.click(x,y); return show()[0]
     def committed(): return bytes(cpu.mem_read(COMMITTED,28)).split(b"\0")[0].decode()
     def preview(path):
-        name,ok=decode_request(cpu)
+        name,ok=decode_request(cpu,rom)
         require(ok and name==path.name and not handles,"native JPEG failed")
         raw=bytes(cpu.mem_read(TX_IMAGE,CANVAS_BYTES))
         ref=np.asarray(Image.open(path).convert("RGB"),dtype=int)
@@ -444,14 +449,14 @@ def exercise(out,clang,installed=None, *, initialize_menus=None):
     require("SET PHOTO" in tap(365,241),"empty TX photo accepted")
     tap(230,193); tap(370,194); tap(100,55)
     require(g.state()["menu"]==279,"TX Picture Select missing")
-    directory_ready(cpu,files)
+    directory_ready(cpu,files,rom)
     first=preview(files[0])
     tap(450,162)
     second=preview(files[1])
     require(first!=second and not committed(),"browsing committed a photo")
     tap(368,242)
     require(committed()=="Reverse.jpg" and g.state()["menu"]==278,"SET did not commit the second JPEG")
-    tap(100,55); directory_ready(cpu,files)
+    tap(100,55); directory_ready(cpu,files,rom)
     if g.state()["selection"]: tap(450,69)
     preview(files[0])
     g.press_exit(); show()
@@ -463,8 +468,8 @@ def exercise(out,clang,installed=None, *, initialize_menus=None):
     cpu.mem_write(0x203807f0,b"\0")
     # Run the stock reload routine if the asynchronous close has not dispatched it.
     if not cpu.mem_read(REQUEST,1)[0]&1:
-        call(cpu,0x200c231c)
-    require(decode_request(cpu)==("Reverse.jpg",True),"committed photo reload failed")
+        call(cpu,rom(0x200c231c))
+    require(decode_request(cpu,rom)==("Reverse.jpg",True),"committed photo reload failed")
     raw=bytes(cpu.mem_read(TX_IMAGE,CANVAS_BYTES))
     require(raw==second,"committed JPEG differs from selection")
     results=[]
@@ -478,7 +483,7 @@ def exercise(out,clang,installed=None, *, initialize_menus=None):
         require(mode in labels and "MODE" in labels and committed()=="Reverse.jpg",str(labels))
         g.press_exit(); show()
         require(g.state()["menu"]==21,"failed to return to PICTURE")
-        results.append(check_pcm(g,sym,out,mode,raw))
+        results.append(check_pcm(g,sym,out,mode,raw,board.defaults if board else 0x20367b78))
         tap(230,193)
     tap(450,193); g.press_exit()
     require("Martin M1" in show()[0],"cancelled mode selection changed the mode")
@@ -488,7 +493,7 @@ def exercise(out,clang,installed=None, *, initialize_menus=None):
     tap(450,193)
     require(g.state()["menu"]==277,"DV BLOCK no longer opens stock block selection")
     with wave.open(str(out/"Robot-36.wav"),"rb") as wav:
-        irq_result=irq_replay(stock[0],main,sym,raw,wav.readframes(72))
+        irq_result=irq_replay(board.stock if board else stock[0],main,sym,raw,wav.readframes(72),board)
     report=dict(main_sha256=sha256(main).hexdigest(),files_opened=opened,
                 selected="Reverse.jpg",picker_modes=picker_count,cancel_retains_selection=True,
                 selected_canvas_sha256=sha256(raw).hexdigest(),modes=results,dv_block=True,

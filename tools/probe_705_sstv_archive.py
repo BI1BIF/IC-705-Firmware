@@ -11,9 +11,9 @@ from tools.replay_705_settings import SettingsGuest
 from tools.render_705_stock_row import require
 
 
-def check_archive(stock,app,sym,install,out):
+def check_archive(stock,app,sym,install,out, *, guest=None):
     with patch.object(renderer,"HEAP_START",0x20700000):
-        g=SettingsGuest(stock,front_panel=True)
+        g=guest or SettingsGuest(stock,front_panel=True)
     install(g)
     cpu=g.cpu
     cpu.mem_write(g.language_address,bytes(2))
@@ -22,6 +22,7 @@ def check_archive(stock,app,sym,install,out):
     card=True
     def sd(_cpu,address,_size,_data):
         r0,r1,r2,r3=[cpu.reg_read(r) for r in (arm.UC_ARM_REG_R0,arm.UC_ARM_REG_R1,arm.UC_ARM_REG_R2,arm.UC_ARM_REG_R3)]
+        address = original[address]
         code=0
         if address==0x200c27e8:
             code=int(not card)
@@ -56,7 +57,8 @@ def check_archive(stock,app,sym,install,out):
                 cpu.mem_write(r3,pack("<I",len(data)))
         cpu.reg_write(arm.UC_ARM_REG_R0,code)
         cpu.reg_write(arm.UC_ARM_REG_PC,cpu.reg_read(arm.UC_ARM_REG_LR))
-    for address in (0x200c27e8,0x2023fec8,0x2023fee4,0x2023ff00,0x2023ff18,0x2023ff64):
+    original = {g.rom(pc):pc for pc in (0x200c27e8,0x2023fec8,0x2023fee4,0x2023ff00,0x2023ff18,0x2023ff64)}
+    for address in original:
         cpu.hook_add(uc.UC_HOOK_CODE,sd,begin=address,end=address)
     enter(g); frame(g); g.click(115,116); tick(g); frame(g)
     canvas=int.from_bytes(cpu.mem_read(sym["pixels"],4),"little")

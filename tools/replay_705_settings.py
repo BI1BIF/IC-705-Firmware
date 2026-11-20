@@ -23,33 +23,35 @@ BRIGHTNESS_DRAW = 0x20159854
 GRID_PAGE = 0x204BD24B  # guest uses 1 and 2, at offset 11 of its grid state
 
 
-def attach_front_surface(cpu, surface, *, double_buffered=False):
-    table = unpack("<I", cpu.mem_read(0x201952CC, 4))[0]
+def attach_front_surface(cpu, surface, *, double_buffered=False, graphics_shift=0):
+    table = unpack("<I", cpu.mem_read(0x201952CC+graphics_shift, 4))[0]
     for index in range(19):
         base, width, height = unpack("<IHH", cpu.mem_read(table+8*index, 8))
         surface.targets[index] = (base, width, height, bytearray(width*height*4))
 
     def select(_cpu, address, _size, _data):
         index = surface.reg("R1")
-        if address == 0x20194C18:
+        if address == 0x20194C18+graphics_shift:
             require(index == 0 or double_buffered and index == 1, f"unmodeled EGL output {index}")
             # Both EGL slots target the same logical virtual LCD.
             surface.select_target()
         else:
             surface.select_target(index)
 
-    for address in (0x20194C18, 0x201951AC):
+    for address in (0x20194C18+graphics_shift, 0x201951AC+graphics_shift):
         cpu.hook_add(uc.UC_HOOK_CODE, select, begin=address, end=address)
 
 
 class SettingsGuest:
-    def __init__(self, images, *, front_panel=False):
+    def __init__(self, images, *, front_panel=False, rom=lambda address: address, language_address=None):
         main, font, graphics, self.main_hash, small_font = images
         self.front_panel = front_panel
-        cpu, surface = self.cpu, self.surface = make_surface(main, font, small_font if front_panel else None)
+        self.rom = rom
+        shift = rom(FRAME_DRAW) - FRAME_DRAW
+        cpu, surface = self.cpu, self.surface = make_surface(main, font, small_font if front_panel else None, graphics_shift=shift)
         cpu.mem_map(GRAPHICS_FLASH, len(graphics), uc.UC_PROT_READ)
         cpu.mem_write(GRAPHICS_FLASH, graphics)
-        self.language_address = PROFILES[self.main_hash].language_bytes
+        self.language_address = language_address or PROFILES[self.main_hash].language_bytes
         cpu.mem_write(self.language_address, b"\x01\x01")
         cpu.mem_write(TOUCH_SAMPLE, b"\x01\x00\x00\x00\x00")
         self.writes, self.visits = [], []
@@ -73,16 +75,16 @@ class SettingsGuest:
             self.writes.append({"pc": hex(surface.reg("PC")), "address": hex(address), "size": size, "value": value})
 
         cpu.hook_add(uc.UC_HOOK_MEM_INVALID, missing)
-        cpu.hook_add(uc.UC_HOOK_CODE, graphics_boundary, begin=0x20263100, end=0x20263DFF)
-        cpu.hook_add(uc.UC_HOOK_CODE, handoff, begin=UI_HANDOFF, end=UI_HANDOFF)
+        cpu.hook_add(uc.UC_HOOK_CODE, graphics_boundary, begin=0x20263100+shift, end=0x20263DFF+shift)
+        cpu.hook_add(uc.UC_HOOK_CODE, handoff, begin=rom(UI_HANDOFF), end=rom(UI_HANDOFF))
         watched = (OPEN_MENU, DISPATCH, SELECT_ROW, BACK, 0x2008B668, 0x2008B670,
                    0x200F0954, 0x200F022C, 0x200A2EE4, 0x200AD034, 0x201549B4,
                    TOUCH_RECT, TOUCH_ACTION, 0x2007D574, 0x2008B734)
         if front_panel:
             watched += (KEY_SCAN, KEY_EVENT, 0x200872E8, 0x20087340, FRAME_DRAW, HOME_DRAW, GRID_DRAW, BRIGHTNESS_DRAW)
-            attach_front_surface(cpu, surface)
+            attach_front_surface(cpu, surface, graphics_shift=shift)
         for address in watched:
-            cpu.hook_add(uc.UC_HOOK_CODE, visited, begin=address, end=address)
+            cpu.hook_add(uc.UC_HOOK_CODE, visited, begin=rom(address), end=rom(address))
         for first, last in ((MENU+10, MENU+11), (MENU+63, MENU+63), (LIST_STATE+16, LIST_STATE+19),
                             (ROW_INPUT, ROW_INPUT), (ROW_INPUT+18, ROW_INPUT+19),
                             (self.language_address, self.language_address+1)):
@@ -102,11 +104,11 @@ class SettingsGuest:
         require(0 <= x < surface.width and 0 <= y < surface.height, "touch is outside the guest LCD")
         # shortcut: feed one down and two release polls at the input sample buffer; no digitizer model.
         cpu.mem_write(TOUCH_SAMPLE, pack(">BHH", 0, x, y))
-        call(cpu, TOUCH_POLL)
+        call(cpu, self.rom(TOUCH_POLL))
         hit_id, = unpack("<H", cpu.mem_read(TOUCH_STATE+2, 2))
         cpu.mem_write(TOUCH_SAMPLE, pack(">BHH", 1, 0, 0))
-        call(cpu, TOUCH_POLL)
-        call(cpu, TOUCH_POLL)
+        call(cpu, self.rom(TOUCH_POLL))
+        call(cpu, self.rom(TOUCH_POLL))
         return hit_id
 
     def press_menu(self):
@@ -120,7 +122,7 @@ class SettingsGuest:
         for sample in (1 << bit, 0):
             self.cpu.mem_write(KEY_SAMPLE + bank, bytes((sample,)))
             for _ in range(7):
-                call(self.cpu, TOUCH_POLL)
+                call(self.cpu, self.rom(TOUCH_POLL))
 
     def render(self):
         cpu, surface = self.cpu, self.surface
@@ -130,12 +132,12 @@ class SettingsGuest:
         surface.image_draws.clear()
         surface.pixel_writes.clear()
         self.visits.clear()
-        call(cpu, UPDATE, instruction_limit=2_000_000)
+        call(cpu, self.rom(UPDATE), instruction_limit=2_000_000)
         mode = cpu.mem_read(PAGE+1, 1)[0]
         if self.front_panel:
             target = {1: HOME_DRAW, 2: GRID_DRAW, 12: 0x201549B4, 13: 0x201549B4, 15: BRIGHTNESS_DRAW}.get(mode)
             require(target is not None, f"unmodeled panel UI mode {mode}")
-            call(cpu, FRAME_DRAW, instruction_limit=12_000_000, timeout_us=10_000_000)
+            call(cpu, self.rom(FRAME_DRAW), instruction_limit=12_000_000, timeout_us=10_000_000)
             surface.select_target()
         else:
             target = 0x201549B4
@@ -143,7 +145,7 @@ class SettingsGuest:
         require(self.state() == before, "display update altered navigation state")
         labels = ["".join(chr(g["key"]) for g in event["glyphs"]).rstrip() for event in surface.events]
         require(min(surface.pixels[3::4]) == 255, "expected an opaque original frame")
-        require(hex(UI_HANDOFF) in self.visits and hex(target) in self.visits, "missing original draw path")
+        require(hex(self.rom(UI_HANDOFF)) in self.visits and hex(self.rom(target)) in self.visits, "missing original draw path")
         return labels, png(surface.width, surface.height, surface.pixels)
 
 

@@ -32,15 +32,18 @@ def load_a(package, expected_main):
     return bytes(main), data
 
 
-def observed_preflight(cpu, package, prior, reads, pending, opened, *, mismatch=None):
+def observed_preflight(cpu, package, prior, reads, pending, opened, *, mismatch=None, rom=lambda pc: pc):
     # Reported component versions from the prior package header are a board-state fixture.
-    cpu.mem_write(BUILDS, prior[4:12])
+    # BUILDS is the board-reported version compared to the optional B record.
+    # E140 supplies that record, whereas J140 leaves the eight bytes blank.
+    board_version = prior[20:28] if any(prior[20:28]) else prior[4:12]
+    cpu.mem_write(BUILDS, board_version)
     for i, at in enumerate(VERSION_BANK):
         field = prior[0x1c+4*i:0x20+4*i]
         cpu.mem_write(at, b"0"+field[1:] if mismatch == "C" and i == 0 else field)
     wlan = prior[0x2c:0x38]
     cpu.mem_write(0x20498680, b"\x01"+wlan[1:] if mismatch == "D" else wlan)
-    require(call(cpu, HEADER_CHECK, timeout_us=0, instruction_limit=5_000_000) == 0 and not opened() and not pending,
+    require(call(cpu, rom(HEADER_CHECK), timeout_us=0, instruction_limit=5_000_000) == 0 and not opened() and not pending,
             "original header checker did not accept the official DAT")
     selection = bytes(cpu.mem_read(TASK+27, 4))
     require(reads[-1] == (len(package)-2, 2), "original header did not read its end marker")
@@ -51,10 +54,10 @@ def observed_preflight(cpu, package, prior, reads, pending, opened, *, mismatch=
         require(c.reg_read(arm.UC_ARM_REG_R0) == 0, "original digest comparison failed")
         digests.append(checks[pc])
 
-    checks = dict(zip((0x2006D2D0, 0x2006D500, 0x2006D6C4, 0x2006D890), "ABCD"))
+    checks = dict(zip(map(rom, (0x2006D2D0, 0x2006D500, 0x2006D6C4, 0x2006D890)), "ABCD"))
     hooks = [cpu.hook_add(uc.UC_HOOK_CODE, compare, begin=at, end=at) for at in checks]
     try:
-        require(call(cpu, DIGEST_CHECK, timeout_us=0, instruction_limit=330_000_000) == 0 and not opened() and not pending,
+        require(call(cpu, rom(DIGEST_CHECK), timeout_us=0, instruction_limit=330_000_000) == 0 and not opened() and not pending,
                 "original digest worker did not accept the official DAT")
     finally:
         for hook in hooks:
@@ -65,14 +68,15 @@ def observed_preflight(cpu, package, prior, reads, pending, opened, *, mismatch=
         expected = [(at, min(0x8000, end-at)) for at in range(start, end, 0x8000)]+[(end, 16)]
         require(observed == (expected if group["name"] in digests else []), f"unexpected read plan for {group['name']}")
     reads.clear()
-    return dict(selection_bytes=selection.hex(), digests=digests, fixture_prior_build=prior[4:12].decode())
+    return dict(selection_bytes=selection.hex(), digests=digests, fixture_prior_build=prior[4:12].decode(),
+                fixture_board_version=board_version.decode())
 
 
-def finish_stock_task(cpu, completed, pending, opened):
+def finish_stock_task(cpu, completed, pending, opened, *, rom=lambda pc: pc, path=STOCK_PATH):
     mailbox = TASK+0x60
     event = 0x7050
-    ui_poll, task_dispatch, task_idle = 0x200F6610, 0x20071C8C, 0x20071C80
-    signal, wait, dialog = 0x202D47B4, 0x202D4804, 0x20047B28
+    ui_poll, task_dispatch, task_idle = map(rom, (0x200F6610, 0x20071C8C, 0x20071C80))
+    signal, wait, dialog = map(rom, (0x202D47B4, 0x202D4804, 0x20047B28))
     events, dialogs, branch_hits = [], [], []
     byte = lambda address: cpu.mem_read(address, 1)[0]
 
@@ -89,7 +93,7 @@ def finish_stock_task(cpu, completed, pending, opened):
             require(args[0] == event, "unexpected stock RTOS event")
             events.append(dict(pc=hex(pc), phase=byte(STAGE)))
             if pc == wait:
-                require(args[1] == 0xFFFFFFFF and byte(STAGE) == 5 and completed == [A_VERIFIED],
+                require(args[1] == 0xFFFFFFFF and byte(STAGE) == 5 and completed == [rom(A_VERIFIED)],
                         "unexpected stock wait")
                 # shortcut: model the other task's mode-5 acknowledgement, until board coordination is replayed.
                 c.mem_write(STAGE, b"\x01")
@@ -98,11 +102,11 @@ def finish_stock_task(cpu, completed, pending, opened):
 
     cpu.mem_write(TASK+0x5C, event.to_bytes(4, "little"))
     cpu.mem_write(UI, b"\x41")  # Original UI state just after the confirmation, before scheduling writes.
-    cpu.mem_write(0x203FFA4D, STOCK_PATH)  # The selected virtual file; stock UI copies it to the file task.
+    cpu.mem_write(0x203FFA4D, path)  # The selected virtual file; stock UI copies it to the file task.
     cpu.mem_write(STAGE, b"\x01")
     for address in (signal, wait, dialog):
         cpu.hook_add(uc.UC_HOOK_CODE, boundary, begin=address, end=address)
-    for address in (0x2006E174, 0x2006E358, 0x2006E558):
+    for address in map(rom, (0x2006E174, 0x2006E358, 0x2006E558)):
         cpu.hook_add(uc.UC_HOOK_CODE, lambda _c, pc, *_: branch_hits.append(hex(pc)), begin=address, end=address)
     call(cpu, ui_poll)
     require(byte(UI) == 0x42 and byte(mailbox) == 11 and dialogs == [(0xA0, 0, 0)],
@@ -111,7 +115,7 @@ def finish_stock_task(cpu, completed, pending, opened):
     cpu.reg_write(arm.UC_ARM_REG_R4, TASK)
     cpu.reg_write(arm.UC_ARM_REG_R5, 0)
     cpu.emu_start(task_dispatch, task_idle, count=950_000_000)
-    require(cpu.reg_read(arm.UC_ARM_REG_PC) == task_idle and completed == [A_VERIFIED] and not opened() and
+    require(cpu.reg_read(arm.UC_ARM_REG_PC) == task_idle and completed == [rom(A_VERIFIED)] and not opened() and
             not pending and not branch_hits and byte(mailbox) == 0 and byte(TASK+0x6c) == 255 and
             cpu.reg_read(arm.UC_ARM_REG_R0) == 0,
             f"stock write request did not return success at file task: {events=} {branch_hits=}")
@@ -128,13 +132,13 @@ def finish_stock_task(cpu, completed, pending, opened):
     call(cpu, ui_poll)
     require(byte(UI) == 0 and byte(0x20380736) == byte(0x20380737) == 1,
             "stock UI did not exit with the main update restart pending")
-    restart = observe_restart_tail(cpu)
+    restart = observe_restart_tail(cpu, rom=rom)
     return dict(write_task_return=0, non_a_writer_branches=branch_hits, progress=255, dialogs=[hex(d[0]) for d in dialogs],
                 completion_delay=delay, ui_state_after_expiry=byte(UI), event_boundaries=events, file_closed=True,
                 restart_tail=restart)
 
 
-def observe_restart_tail(cpu):
+def observe_restart_tail(cpu, *, rom=lambda pc: pc):
     """Run the original power-off tail with the update's retained restart flag."""
     wdt, cpg, pfc, clock = 0xFCFE0000, 0xFCFE0400, 0xFCFE3000, 0xFCFEC000
     accessed, stored = [], {}
@@ -161,11 +165,11 @@ def observe_restart_tail(cpu):
     cpu.reg_write(arm.UC_ARM_REG_FPEXC, 0x40000000)
     cpu.reg_write(arm.UC_ARM_REG_R5, 0x20380737)
     cpu.reg_write(arm.UC_ARM_REG_R6, 0x2038041F)
-    cpu.emu_start(0x200788E0, 0x20078188, count=20000)
-    require(cpu.reg_read(arm.UC_ARM_REG_PC) == 0x20078188 and
+    cpu.emu_start(rom(0x200788E0), rom(0x20078188), count=20000)
+    require(cpu.reg_read(arm.UC_ARM_REG_PC) == rom(0x20078188) and
             [record for record in accessed if record[0] < cpg] == expected_watchdog,
             f"no original watchdog reset request: pc={cpu.reg_read(arm.UC_ARM_REG_PC):#x} {accessed=}")
-    return dict(entry="0x200788e0", watchdog_request_pc="0x20078178",
+    return dict(entry=hex(rom(0x200788e0)), watchdog_request_pc=hex(rom(0x20078178)),
                 watchdog_writes=[dict(address=hex(address), value=hex(value)) for address, _, value in expected_watchdog],
                 scope="isolated original final shutdown branch with retained update state; simulated peripheral bus")
 
@@ -251,7 +255,7 @@ class SpiNor:
             raise ValueError(f"unexpected NOR transfer {opcode:#x}/{mode:#x}/{value:#x}")
 
 
-def update_a(main, package, initial, *, prior=None, cuts=None, active_second=False):
+def update_a(main, package, initial, *, prior=None, cuts=None, active_second=False, rom=lambda pc: pc, path=STOCK_PATH):
     cpu = machine(main)
     nor = SpiNor(cpu, initial, cuts)
 
@@ -264,19 +268,19 @@ def update_a(main, package, initial, *, prior=None, cuts=None, active_second=Fal
                 f"unknown cache write {offset:#x}/{width}/{value:#x}")
 
     cpu.mmio_map(0x3FFFF000, 4096, cache_read, None, cache_write, None)
-    reads, pending, opened = bind_stock_file(cpu, package)
+    reads, pending, opened = bind_stock_file(cpu, package, rom=rom, path=path)
     if prior is None:
         cpu.mem_write(DECODE_STATE+2, bytes((sum(package[4:12]) & 255,)))
     else:
-        preflight = observed_preflight(cpu, package, prior, reads, pending, opened)
+        preflight = observed_preflight(cpu, package, prior, reads, pending, opened, rom=rom)
         require(preflight["digests"] == ["A"] and preflight["selection_bytes"] == "00000001",
-                "original preflight did not select only A")
+                f"original preflight did not select only A: {preflight}")
     # Calculate the layout flag with the original NOR comparison instead of supplying its value.
-    flag, store = 0x2038089D, 0x20104984
+    flag, store = 0x2038089D, rom(0x20104984)
     cpu.reg_write(arm.UC_ARM_REG_CPSR, 0x1F)
     cpu.reg_write(arm.UC_ARM_REG_SP, SCRATCH-0x200)
     cpu.reg_write(arm.UC_ARM_REG_R4, flag-1)
-    cpu.emu_start(0x2010495C, store, count=1000)
+    cpu.emu_start(rom(0x2010495C), store, count=1000)
     require(cpu.reg_read(arm.UC_ARM_REG_PC) == store and cpu.mem_read(flag, 1)[0] == int(not active_second),
             "original layout flag disagrees with the initial boot slot")
 
@@ -289,14 +293,14 @@ def update_a(main, package, initial, *, prior=None, cuts=None, active_second=Fal
         if prior is None:
             c.emu_stop()
 
-    cpu.hook_add(uc.UC_HOOK_CODE, verified, begin=A_VERIFIED, end=A_VERIFIED)
+    cpu.hook_add(uc.UC_HOOK_CODE, verified, begin=rom(A_VERIFIED), end=rom(A_VERIFIED))
     if prior is not None:
-        ui_result = finish_stock_task(cpu, completed, pending, opened)
+        ui_result = finish_stock_task(cpu, completed, pending, opened, rom=rom, path=path)
     else:
         try:
-            call(cpu, WRITE_STAGE, timeout_us=0, instruction_limit=950_000_000)
+            call(cpu, rom(WRITE_STAGE), timeout_us=0, instruction_limit=950_000_000)
         except (uc.UcError, ValueError) as exc:
-            if completed != [A_VERIFIED] or cpu.reg_read(arm.UC_ARM_REG_PC) != A_VERIFIED:
+            if completed != [rom(A_VERIFIED)] or cpu.reg_read(arm.UC_ARM_REG_PC) != rom(A_VERIFIED):
                 raise ValueError(f"A update stopped at {cpu.reg_read(arm.UC_ARM_REG_PC):#x}: "
                                  f"{faults}; SPI start={nor.first_transactions!r}") from exc
         else:
@@ -305,7 +309,7 @@ def update_a(main, package, initial, *, prior=None, cuts=None, active_second=Fal
             nor.page_address is None and nor.erases and nor.erases[-1] == SELECTOR,
             "stock A did not finish updating the virtual NOR and selector")
     written = bytes(cpu.mem_read(BOOT, NOR_BYTES))
-    result = dict(verified_at=hex(A_VERIFIED), bytes_read=sum(length for _, length in reads), reads=len(reads),
+    result = dict(verified_at=hex(rom(A_VERIFIED)), bytes_read=sum(length for _, length in reads), reads=len(reads),
                   erased_sectors=[hex(n) for n in nor.erases], programmed_bytes=sum(nor.programmed.values()),
                   programmed_by_sector={hex(n): size for n, size in sorted(nor.programmed.items())},
                   command_counts={hex(n): count for n, count in sorted(nor.commands.items())},

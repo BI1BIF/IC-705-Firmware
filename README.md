@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方日版 IC-705 固件研究项目。当前源码基线 **J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j**，基于 Icom 日版 1.40。使用下方转换页，在浏览器本地从原厂 DAT 生成当前版本。
+BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），两版均提供 **CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j**。选择对应电台的原厂 DAT，浏览器会识别版本并在本地生成固件。
 
-BI1BIF’s independent firmware research for the Japanese Icom IC-705. The current source baseline is **J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j**, based on Japanese firmware 1.40. Build the current firmware locally in your browser from the original DAT.
+BI1BIF’s independent firmware research for the Icom IC-705. The converter supports Japanese (J140) and European/US (E140) Icom 1.40 firmware. Both include **CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j**. Select the original DAT for your radio to build its firmware locally in your browser.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -24,6 +24,10 @@ TX3 已收到 CW 和 SSTV 的真机使用反馈。TX4 的 23 种发送模式已�
 Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed emulated menu selection and full-frame audio tests. Over-the-air checks for the added modes are still pending.
 
 ## 更新日志 · Release notes
+
+**2026-11-20 · E140** — 欧版和美版共用原厂 `705E140.dat`。欧版补丁已通过双槽模拟安装与启动、CW 译码、SSTV 23 种模式整帧收发、FT8／FT4 收发与 SD 日志回放。欧／美版实体电台安装和射频收发仍待实测。
+
+The European and US releases use the same original `705E140.dat`. The E140 patch passed emulated installation and boot from both slots, CW decoding, full-frame SSTV tests for 23 modes, FT8/FT4 RX/TX and SD logging. Installation and RF operation on physical E140 radios still await confirmation.
 
 **2026-11-20 · FT8/FT4 TX2j** — 首次公开机内 FT8（15 秒）和 FT4（7.5 秒）收发。支持 GPS／机内时钟、中文软键、十行历史分页、CQ 筛选、自动选台及自动通联。FT8 和 FT4 共用 SD 卡上的 `IC-705/FTLOG.ADI`。本版校正顶栏对齐，并减少收听页的重复绘字。
 
