@@ -8,8 +8,10 @@ const messages = {
   unsupported:["请使用支持本地解压的新版浏览器。","Use a current browser with gzip support."],
   loadError:["无法加载版本信息，请刷新页面。","Could not load the release. Refresh to retry."],
   wrongBase:["底包不匹配，请选择未修改的日版 1.40 DAT。","Select the unmodified Japanese 1.40 DAT."],
+  e140:["已识别欧版／美版 1.40 原厂固件。当前 CW、SSTV 和 FT8／FT4 补丁仅适用于日版电台。","European/US stock firmware 1.40 recognized. The current CW, SSTV and FT8/FT4 patch is available only for Japanese radios."],
   badOutput:["补丁或输出校验失败，请刷新重试。","Verification failed. Refresh and retry."],
   checking:["正在校验原厂文件…","Checking the original firmware…"],
+  readError:["无法读取文件，请重新选择原厂 DAT。","Could not read the file. Select the original DAT again."],
   building:["正在生成并校验固件…","Building and verifying firmware…"],
   ready:["固件已生成。如果下载未开始，请点下方按钮手动保存。若在微信内仍无法保存，请用系统浏览器打开此页并重新选择原厂 DAT。","Firmware is ready. If the download did not start, use the save button below. If saving fails in an in-app browser, reopen this page in your system browser and select the original DAT again."],
   retry:["转换失败，请检查网络后重试。","Build failed. Check your connection and retry."]
@@ -122,11 +124,26 @@ function clearDownload() {
   save.removeAttribute("href");
 }
 
-source.onchange = () => {
+// Icom distributes the same stock E140 DAT in Europe and the US.
+const e140 = {size: 12279020, sha256: "132383f8388641d02d0fadaccf9878d01a1960fa77a028328f0eb33dcfbc147b"};
+source.onchange = async () => {
   clearDownload();
   filename();
   setState("");
-  build.disabled = !source.files.length;
+  const file = source.files[0];
+  build.disabled = true;
+  if (!file) return;
+  if (file.size === e140.size) {
+    setState("checking");
+    try {
+      const hash = await sha256(await file.arrayBuffer());
+      if (file === source.files[0]) setState(hash === e140.sha256 ? "e140" : "wrongBase");
+    } catch {
+      if (file === source.files[0]) setState("readError");
+    }
+    return;
+  }
+  build.disabled = false;
 };
 
 build.onclick = async () => {

@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=4"><script type="module" src="converter/app.js?v=5"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=4"><script type="module" src="converter/app.js?v=6"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
@@ -21,6 +21,7 @@
 <p data-en="You decide whether to download, modify or flash the firmware and assume the associated risks. The project offers no warranty or repair service.">是否下载、修改和刷写由你自行决定，相关风险由你承担。本项目不提供保修或维修服务。</p>
 <a href="https://www.icom.co.jp/support/drivers/8603/" data-en="Icom download terms ↗">查看 Icom 下载条款 ↗</a></aside>
 <section><dl><div><dt data-en="Required input">原厂底包</dt><dd data-en="IC-705 Japan 1.40">IC-705 日版 1.40</dd></div><div><dt data-en="Target version">目标版本</dt><dd id="version">…</dd></div></dl>
+<p class="hint" data-en="Japan: use 705J140.dat. Europe and US: both use 705E140.dat. A build of this project for that file is not yet available.">日版请选择 705J140.dat。欧版、美版共用 705E140.dat，本项目尚未发布适配该文件的补丁。</p>
 <label for="source" data-en="Choose the original firmware">选择原厂固件</label>
 <div class="file"><input id="source" type="file" accept=".dat" disabled><label for="source" data-en="Choose DAT file">选择 DAT 文件</label><span id="filename"></span></div>
 <a href="https://www.icom.co.jp/support/drivers/8603/" data-en="Get Japanese firmware 1.40 from Icom ↗">下载 Icom 日版 1.40 原厂固件 ↗</a>
