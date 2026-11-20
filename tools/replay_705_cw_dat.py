@@ -40,11 +40,11 @@ def pack_cw_dat(stock_dat, cw_image):
     return candidate, (stock, stock_a, bundle, symbols, bundle[0], candidate_a, checksum, stored)
 
 
-def pack_main_dat(stock_dat, stock, main):
+def pack_main_dat(stock_dat, stock, main, *, deeper=False):
     require(digest(stock_dat)==J140_DAT_SHA and digest(stock[0])==J140_MAIN_SHA, "expected stock J140")
     _, group = checked_group_a(stock_dat)
     _, stock_a = load_a(stock_dat, J140_MAIN_SHA)
-    packed = with_pc_main(stock[2], main)
+    packed = with_pc_main(stock[2], main, deeper=deeper)
     stored, = unpack_from("<I", packed, BOOT_SIZE)
     # Rejoin stock encoded bytes after one unchanged padding byte has restored feedback state.
     join = BOOT_SIZE+8+stored+1

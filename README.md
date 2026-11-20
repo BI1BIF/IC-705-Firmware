@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方日版 IC-705 固件研究项目。当前源码基线 **J140 · CW D6 · SSTV RX4-TX4**，基于 Icom 日版 1.40。使用下方转换页，在浏览器本地从原厂 DAT 生成当前版本。
+BI1BIF 的非官方日版 IC-705 固件研究项目。当前源码基线 **J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j**，基于 Icom 日版 1.40。使用下方转换页，在浏览器本地从原厂 DAT 生成当前版本。
 
-BI1BIF’s independent firmware research for the Japanese Icom IC-705. The current source baseline is **J140 · CW D6 · SSTV RX4-TX4**, based on Japanese firmware 1.40. Build the current firmware locally in your browser from the original DAT.
+BI1BIF’s independent firmware research for the Japanese Icom IC-705. The current source baseline is **J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j**, based on Japanese firmware 1.40. Build the current firmware locally in your browser from the original DAT.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -13,6 +13,7 @@ BI1BIF’s independent firmware research for the Japanese Icom IC-705. The curre
 | CW DECODE | 在 CW 模式下查看译文、速度和波形；点 HOLD/CLR 可冻结译文，长按清屏。 | Read decoded Morse text, speed and waveform in CW mode. Tap HOLD/CLR to freeze the text, or hold it to clear. |
 | SSTV RX | 在 PICTURE → SSTV 自动识别模式，使用 SAVE/HIST 保存、回看图片。Robot 36 收到帧头后可在短暂衰落中保留行号。 | Open PICTURE → SSTV for automatic mode detection. SAVE/HIST saves and recalls images. After a valid header, Robot 36 retains the scan position through short fades. |
 | SSTV TX | 从 SD 卡选图并确认，点 MODE 选模式，返回后点 SEND 发射。 | Select and confirm a photo from the SD card, choose a mode under MODE, then return and tap SEND. |
+| FT8 / FT4 | MODE → FT8/4，十行收听、点选应答、主动 CQ、自动通联；日志存入 SD 卡。 | Open MODE → FT8/4 to decode, reply, call CQ and sequence contacts. Completed QSOs are logged to the SD card. |
 
 **23 种收发模式 / 23 RX and TX modes**
 
@@ -21,6 +22,14 @@ Robot 36/72 · Martin M1–M4 · Scottie S1/S2/DX · Wraase SC2-180 · PD50/90/1
 TX3 已收到 CW 和 SSTV 的真机使用反馈。TX4 的 23 种发送模式已通过模拟面板点选和整帧音频验证，新增模式的逐项射频互收仍待完成。
 
 Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed emulated menu selection and full-frame audio tests. Over-the-air checks for the added modes are still pending.
+
+## 更新日志 · Release notes
+
+**2026-11-20 · FT8/FT4 TX2j** — 首次公开机内 FT8（15 秒）和 FT4（7.5 秒）收发。支持 GPS／机内时钟、中文软键、十行历史分页、CQ 筛选、自动选台及自动通联。FT8 和 FT4 共用 SD 卡上的 `IC-705/FTLOG.ADI`。本版校正顶栏对齐，并减少收听页的重复绘字。
+
+First public release of on-radio FT8 (15 s) and FT4 (7.5 s) RX/TX. Select GPS or the internal clock, browse and filter decodes, and reply manually or use automatic caller selection and sequencing. Both modes share an ADIF log. TX2j aligns the header and reduces repeated text drawing.
+
+[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [模拟操作 GIF · Simulator walkthrough](docs/images/ftx-tx2j.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
 
 ## 微信交流群 · WeChat test group
 

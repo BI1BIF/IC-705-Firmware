@@ -1,0 +1,13 @@
+File 1
+                                   -4  0.0  200 CQ JA1ABC PM95                       
+                                   -4  0.0  332 CQ DL1ABC JO62                       
+                                   -4  0.0  464 F4ABC I4ABC RR73                     
+                                   -4  0.0  596 CQ F4ABC JN18                        
+                                   -4  0.0  728 CQ K1ABC FN42                        
+                                   -4  0.0  860 CQ G4ABC IO91                        
+                                   -4  0.0  992 CQ VK3ABC QF22                       
+                                   -4  0.0 1124 CQ VE3ABC FN03                       
+                                   -4  0.0 1256 CQ VK2ABC QF56                       
+                                   -4  0.0 1388 CQ K7ABC CN87                        
+                                   -4  0.0 1520 CQ EA1ABC IN53                       
+                                   -4  0.0 1652 CQ OZ1ABC JO55                       

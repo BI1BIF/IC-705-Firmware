@@ -391,7 +391,7 @@ def check_mode_picker(tap, show):
     raise ValueError("TX menu cannot return to Robot 36")
 
 
-def exercise(out,clang,installed=None):
+def exercise(out,clang,installed=None, *, initialize_menus=None):
     out.mkdir(parents=True,exist_ok=True)
     directory=out/"card"/"IC-705"/"Picture"
     directory.mkdir(parents=True,exist_ok=True)
@@ -414,6 +414,8 @@ def exercise(out,clang,installed=None):
     simulated_gpio(cpu)
     cpu.mem_write(BASE,main)
     cpu.ctl_remove_cache(BASE,BASE+len(main))
+    if initialize_menus:
+        initialize_menus(cpu, main)
     cpu.mem_write(sym["sstv_thread"],pack("<I",1))
     cpu.mem_write(g.language_address,bytes(2))
     opened,handles=mount_card(cpu,directory)

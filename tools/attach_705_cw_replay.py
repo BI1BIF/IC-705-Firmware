@@ -68,7 +68,9 @@ def attach(cpu, extension, *, draw, schedule_marker, stock_canvas=False, state=T
     anchor = symbols.get("cw_state_anchor")
     require(bool(anchor) == (state != TEST_STATE), "CW build and state layout differ")
     if not anchor:
-        cpu.mem_map(TEST_STATE, STATE_RESERVATION)
+        # read_session also checks the optional second-page transcript signature.
+        # This is the flat fixture mapping, independent of stock heap reservations.
+        cpu.mem_map(TEST_STATE, 8192)
     if code_base is None:
         base = RTX_CODE
         cpu.mem_map(base, RTX_MEMORY)

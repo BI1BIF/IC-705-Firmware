@@ -138,9 +138,9 @@ class TextSurface:
         value = self.handlers[addr]()
         if value is not None:
             cpu.reg_write(arm.UC_ARM_REG_R0, value)
-        # Intercepted callees return to an A32 caller in this profile.
+        # The J140 application can call the heap and graphics backends from A32 or Thumb.
         lr = self.reg("LR")
-        require(lr % 4 == 0, "unexpected instruction state at host boundary")
+        require(lr & 1 or lr % 4 == 0, "misaligned A32 return at host boundary")
         cpu.reg_write(arm.UC_ARM_REG_PC, lr)
 
     def font_lookup(self, _cpu, _addr, _size, _data):
@@ -410,7 +410,7 @@ class TextSurface:
         ds, dh, data = self.images[dst]
         ss, sh, (ptr, sw, source) = self.images[src]
         require(dst != src and 0 < w <= min(ds-dx, sw-sx) and 0 < h <= min(dh-dy, sh-sy) and dither == 1,
-                "unsupported OpenVG image copy")
+                f"unsupported OpenVG copy {ds,dh,dx,dy} <- {sw,sh,sx,sy}, size={w,h} dither={dither}")
         target = data[2] if data else bytearray(ds*dh*4)
         for row in range(h):
             start, end = 4*((sy+row)*ss+sx), 4*((dy+row)*ds+dx)

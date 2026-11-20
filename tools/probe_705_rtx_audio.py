@@ -122,16 +122,21 @@ class StackAudit:
 
 
 def probe(main, extension=None, *, graphics=None, render_output=None, screen=False, stress=None, adjust=False,
-          measure_stack=False, live=False, rf_scope=False, field_rtx=None, audio_experiment=None):
+          measure_stack=False, live=False, rf_scope=False, field_rtx=None, audio_experiment=None,
+          panel_experiment=None, application=None):
     digest = sha256(main).hexdigest()
     require(digest in PROFILES and PROFILES[digest].name == "705J140", "expected stock Japanese 1.40")
-    cpu = machine(main)
+    cpu = machine(main if application is None else application)
     for page in (GICD, GICC, 0xFCFEC000, 0xFCFE0000, 0x3FFFF000,
                  0xFCFE3000, 0xFCFE7000, 0xFCFEE000, 0xFCFEF000, 0xFCFF0000, DMAC, 0xE8005000):
         cpu.mem_map(page, 4096)
     cpu.mem_write(PORT_MODE, pack("<H", 0x40))
     cpu.mem_write(PORT_PTT, pack("<H", 0x2000))  # Active-low input; neutral is high.
-    call(cpu, 0x200052ED, 0x20367B78, 0x20380000, 0x1F44)
+    if application is None:
+        call(cpu, 0x200052ED, 0x20367B78, 0x20380000, 0x1F44)
+    else:
+        cpu.emu_start(0x200052c9,0x200052a8,count=12000000)
+        require(cpu.reg_read(arm.UC_ARM_REG_PC)==0x200052a8,"J140 application data initialization stalled")
     call(cpu, 0x200054DC)  # Original VFP setup, before the isolated RTX entry.
     if graphics:
         _, font, sprites, _, small_font = graphics
@@ -203,9 +208,11 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
         def stop(_c, _pc, *_):
             cpu.emu_stop()
 
-        hook = None if target == STOP else cpu.hook_add(uc.UC_HOOK_CODE, stop, begin=target, end=target)
+        # Stop at the stock idle entry before Unicorn executes its event-wait loop.
+        # A temporary code hook alone can miss this entry in a cached translation.
+        hook = None if target in (STOP, IDLE) else cpu.hook_add(uc.UC_HOOK_CODE, stop, begin=target, end=target)
         try:
-            cpu.emu_start(entry, STOP, count=limit)
+            cpu.emu_start(entry, target if target == IDLE else STOP, count=limit)
         except uc.UcError as err:
             raise ValueError(f"run {entry:#x} failed at {reg('PC'):#x}, unmapped: {faults}") from err
         finally:
@@ -277,14 +284,16 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
         if screen and not live:
             require(value(FRAME_COMPOSED) == 0xE59F0330, "unexpected frame hook instruction")
             cpu.mem_map(SCOPE_CANVAS, SCOPE_MEMORY)
-        seed_vfos(cpu, pair=(7_030_000, 7_035_000))
+    device_panel = application is not None and panel_experiment is not None
+    if extension or device_panel:
+        seed_vfos(cpu, pair=(7_074_000, 7_047_500) if panel_experiment else (7_030_000, 7_035_000))
         if live:
             sub(INIT_RANGES)
         if graphics:
             cpu.mem_write(PROFILES[digest].language_bytes, b"\x01\x01")
             sub(0x2001DEA8)  # Publish the fixture VFO through the stock selector.
         for address in (MODE_UI_A, MODE_VFO_A):
-            cpu.mem_write(address, b"\x20")
+            cpu.mem_write(address, b"\x10" if panel_experiment else b"\x20")
         cpu.mem_write(AUDIO_GATE, b"\x01")
 
         def key(bank, bit):
@@ -355,7 +364,7 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
                 f"timer did not signal the stock kernel on count {count}: {sgis[before:]}")
         irq(0, LOOP)
 
-    if extension:
+    if extension or device_panel:
         waveform = audio("CQ TEST 123")
         rounds = 0
         observed = bytearray()
@@ -378,10 +387,11 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
             observe_detector(c)
             fixed_calls += 1
 
-        cpu.hook_add(uc.UC_HOOK_CODE, observe_pcm, begin=bridges[DECIMATED], end=bridges[DECIMATED])
-        cpu.hook_add(uc.UC_HOOK_CODE, observe_detector, begin=names["cw_feed"], end=names["cw_feed"])
-        if adjust:
-            cpu.hook_add(uc.UC_HOOK_CODE, observe_fixed, begin=names["cw_feed_fixed"], end=names["cw_feed_fixed"])
+        if extension:
+            cpu.hook_add(uc.UC_HOOK_CODE, observe_pcm, begin=bridges[DECIMATED], end=bridges[DECIMATED])
+            cpu.hook_add(uc.UC_HOOK_CODE, observe_detector, begin=names["cw_feed"], end=names["cw_feed"])
+            if adjust:
+                cpu.hook_add(uc.UC_HOOK_CODE, observe_fixed, begin=names["cw_feed_fixed"], end=names["cw_feed_fixed"])
         cpu.mem_write(0x20380874, b"\x01")
         for offset in (0x124, 0x424, 0x524):
             cpu.mem_write(DMAC + offset, pack("<I", 1))
@@ -426,6 +436,7 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
             if before_pcm:
                 before_pcm()
             run(PCM_STEP, PCM_DONE)
+            if device_panel: return
             state = read_session(cpu)
             queued_peak = max(queued_peak, state["queued"])
             return state
@@ -469,6 +480,7 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
             touch_sample = TOUCH_UP
             tick = 0
             last = None
+            overlay_frame = None
             screen_writes = []
             tuning_writes = []
             panel_states = []
@@ -512,8 +524,10 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
             for addr in (0x20380714, 0x203EBC2F):
                 cpu.hook_add(uc.UC_HOOK_MEM_WRITE, tuning, begin=addr, end=addr)
 
-            def step(part=b"", rf_blocks=()):
-                nonlocal tick, last, wave_peak
+            def step(part=b"", rf_blocks=(), *, keys=None):
+                nonlocal tick, last, wave_peak, key0, key1
+                if keys is not None:
+                    key0,key1 = keys
                 tick += 1
                 surface.events.clear()
                 surface.pixel_writes.clear()
@@ -523,7 +537,7 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
                     irq(134, IDLE)
                 capture(part or bytes(72), rf_blocks=rf_blocks)
                 run(PCM_DONE, UI_UPDATE_CALL+4, limit=12_000_000)
-                state = dict(cw=bool(read_session(cpu)["active"]), page=value(0x203807DD, 1),
+                state = dict(cw=bool(extension and read_session(cpu)["active"]), page=value(0x203807DD, 1),
                              scope_layout=value(PAGE+3, 1), popup=value(0x204BD0F4, 1), key=value(0x20380431, 1))
                 if not panel_states or state != panel_states[-1]["state"]:
                     panel_states.append(dict(tick=tick, state=state))
@@ -537,11 +551,13 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
                     sub(0x2012038C)
                 run(0x200D5230, IDLE, limit=12_000_000)
                 if value(0x20380CBE, 1):
+                    if overlay_frame:
+                        overlay_frame()
                     surface.select_target()
                     last = bytes(surface.pixels)
                     glyphs = ["".join(chr(g["key"]) for g in e["glyphs"]) for e in surface.events]
                     frames.append(dict(tick=tick, page=value(PAGE+1, 1), glyphs=glyphs,
-                                       frequency=value(0x20380714), text=read_session(cpu)["shown_text"],
+                                       frequency=value(0x20380714), text=read_session(cpu)["shown_text"] if extension else "",
                                        blits=[w for w in surface.pixel_writes if w["target"] is None],
                                        rf_lcd=scope_lcd(last) if rf_scope else None,
                                        vfo_image=sha256(b"".join(last[(y*480+130)*4:(y*480+372)*4]
@@ -580,11 +596,13 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
                 touch_sample = TOUCH_UP
                 step()
 
-            def turn_dial(direction):
+            def turn_dial(direction, before_step=None):
                 nonlocal dial
                 start = tick
                 before = frames[-1]["frequency"]
-                for _ in range(8):
+                for index in range(8):
+                    if before_step is not None:
+                        before_step(index)
                     dial = (dial + direction*4) & 0xffff
                     step()
                 for _ in range(8):
@@ -609,6 +627,9 @@ def probe(main, extension=None, *, graphics=None, render_output=None, screen=Fal
             key1 = 0
             wait_until(lambda: "-2.5k" in frames[-1]["glyphs"], "stock mini scope grid")
             save("01b-mini-scope")
+            if panel_experiment:
+                overlay_frame, trial = panel_experiment(cpu, surface)
+                return trial(turn_dial, step, tap, frames)
             if rf_scope:
                 sub(0x2011F87C)  # Original spectrum receiver setup after board init.
                 sub(0x200EBCD8)  # Original local scope subscription.

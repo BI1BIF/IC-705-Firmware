@@ -47,7 +47,7 @@ def martin_audio(path):
     return samples
 
 
-def build(folder, compiler, *, base=BASE, limit=BASE+SIZE, cw_pcm=None, diagnostics=False, robot_sync=False, basic=False, late_join=False, tx_study=False):
+def build(folder, compiler, *, base=BASE, limit=BASE+SIZE, cw_pcm=None, diagnostics=False, robot_sync=False, basic=False, late_join=False, tx_study=False, bss_address=None):
     folder.mkdir(parents=True, exist_ok=True)
     cc = Path(shutil.which(str(compiler)) or compiler).resolve()
     tool = lambda name: str(cc.with_name(name+cc.suffix))
@@ -56,7 +56,7 @@ def build(folder, compiler, *, base=BASE, limit=BASE+SIZE, cw_pcm=None, diagnost
                                         + ",".join(map(str,thresholds)) + "};\n")
     script = folder/"rx.ld"
     script.write_text(f"SECTIONS {{ . = {base:#x}; .text : {{ *(.text*) }} .rodata : {{ *(.rodata*) }} "
-                      ".data : { *(.data*) } .bss : { *(.bss*) *(COMMON) } end_rx = .; "
+                      ".data : { *(.data*) } " + (f". = {bss_address:#x}; " if bss_address else "") + ".bss : { *(.bss*) *(COMMON) } end_rx = .; "
                       "/DISCARD/ : { *(.ARM.exidx*) *(.ARM.extab*) } }")
     elf = folder/"rx.elf"
     extra=[] if cw_pcm is None else ["-DSSTV_DEVICE",
@@ -400,7 +400,7 @@ def replay(images, binary, sym, wav, original, out, martin=None, *, installed=No
                 scheduling="Host supplies simulated DMA and polls the ARM worker after up to 24 blocks in normal reception")
 
 
-def scheduler_replay(main, binary, sym, wav, expected_image, *, combined=None):
+def scheduler_replay(main, binary, sym, wav, expected_image, *, combined=None, from_reset=False):
     from tools.probe_705_rtx_audio import (CURRENT, DMA_TIMER, IDLE, LOOP, PCM_DONE, PCM_STEP,
                                            SEM_WAIT, TIMER, TIMERS_CLEARED, UI_HANDLE, probe)
     from tools.emulate_705 import uc
@@ -482,7 +482,7 @@ def scheduler_replay(main, binary, sym, wav, expected_image, *, combined=None):
         return dict(**extra,thread=hex(thread),priority=value(thread+2,1),stack_bytes=value(thread+0x26,2),
                     worker_turns=calls,stats=final,image_rgb565_sha256=digest,
                     first_notification_precedes_worker_start=True)
-    return probe(main,audio_experiment=exercise)
+    return probe(main,audio_experiment=exercise,application=binary if from_reset else None)
 
 
 if __name__=="__main__":

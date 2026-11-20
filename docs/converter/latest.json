@@ -1,24 +1,33 @@
 {
-  "version": "CW D6 · SSTV RX4-TX4",
+  "version": "CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j",
   "size": 12259086,
   "stock": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
-  "target": "5297e2581cdeb8f48af1ba6dd9b1bb33704675673c49b9448383f8d9a383c039",
-  "patch": "e9df0bcada7380d7696587da4718c2a7c30b4770d5ae64d7bc4c1ec911b27306.xor.gz",
-  "patchHash": "e9df0bcada7380d7696587da4718c2a7c30b4770d5ae64d7bc4c1ec911b27306",
+  "target": "8dcb44ae45c02d963d4eba6c9feca23d97f1e90b1f0409f75366de7d467c3c68",
+  "patch": "8dadf23053636f5118c3198cd4fef2eb338d473cc68edda4228cc8f1c9cbba94.xor.gz",
+  "patchHash": "8dadf23053636f5118c3198cd4fef2eb338d473cc68edda4228cc8f1c9cbba94",
   "notes": {
     "features": {
       "zh": [
         "CW 译码：在电台屏幕上查看译文、速度和波形。",
         "SSTV 接收：自动识别 23 种模式，可保存和回看图片。",
-        "SSTV 发射：从 SD 卡选图，选择 23 种模式之一，点 SEND 发射。"
+        "SSTV 发射：从 SD 卡选图，选择 23 种模式之一，点 SEND 发射。",
+        "FT8／FT4 接收：从 MODE → FT8/4 进入，查看十行报文、A/B 时隙、信噪比、音频频率、国家或地区及可用的网格距离。支持 GPS 或机内时钟授时。",
+        "FT8／FT4 通联：主动呼叫 CQ、点选电台应答，或启用自动选台与自动通联。完成的通联追加到 SD 卡 IC-705/FTLOG.ADI。"
       ],
       "en": [
         "CW decoding: read decoded text, speed and waveform on the radio.",
         "SSTV reception: automatically recognize 23 modes, save pictures and browse earlier images.",
-        "SSTV transmission: select a photo from the SD card, choose one of 23 modes and tap SEND."
+        "SSTV transmission: select a photo from the SD card, choose one of 23 modes and tap SEND.",
+        "FT8/FT4 reception: open MODE → FT8/4 for ten rows of decodes with slot, SNR, audio frequency, country or region, and distance when a grid is available. Select GPS or the internal clock.",
+        "FT8/FT4 contacts: call CQ, tap a station to reply, or enable automatic caller selection and sequencing. Completed contacts are appended to IC-705/FTLOG.ADI on the SD card."
       ]
     },
     "history": [
+      {
+        "version": "CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j",
+        "zh": "2026-11-20 · 首次公开机内 FT8／FT4 收发、中文操作和 ADIF 日志。TX2j 对齐顶栏并减少重复绘字，增加接收音频中断及暂停提示。模拟遥控指令与录音单独回放时，FT8 连续六隙、FT4 连续八隙均有解码。实体转轮手感与 ESP32 遥控偶发停更仍待实测。",
+        "en": "2026-11-20 · First public release of on-radio FT8/FT4 RX/TX, Chinese controls and ADIF logging. TX2j aligns the header, skips repeated text draws and reports missing or paused RX audio. A replay with remote commands decoded six consecutive FT8 slots and eight FT4 slots. Dial responsiveness and intermittent stalls with an ESP32 remote still need hardware testing."
+      },
       {
         "version": "CW D6 · SSTV RX4-TX4",
         "zh": "发射模式由 2 种扩展到 23 种，与接收模式对齐。全部模式已通过电脑端菜单和整帧音频验证，新增模式待逐项真机互收。",

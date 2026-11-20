@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IC-705 · FT8 / FT4 操作样机</title>
+<style>
+@font-face{font-family:PanelSC;src:url("data:font/ttf;base64,{{BUTTON_FONT}}") format("truetype");font-display:block}
+#lcd button:not(.record){font-family:Arial,PanelSC,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#111417;color:#e8ecee;font:15px/1.5 system-ui,"Microsoft YaHei",sans-serif}
+main{max-width:820px;margin:5vh auto;padding:16px}h1{font-size:24px;font-weight:600;margin:0 0 20px}
+.frame{overflow:auto;padding:8px 0}#lcd{width:480px;height:272px;background:#06090b;position:relative;overflow:hidden;outline:1px solid #61696f;color:#eff4f5;font:15px Arial,sans-serif;font-variant-numeric:tabular-nums}
+.radiohead{width:480px;height:86px;background:black url("{{FT8_HEADER}}") no-repeat}.radiohead.ft4{background-image:url("{{FT4_HEADER}}")}.bar,.keys,.record{display:flex;align-items:center}
+#work{position:absolute;inset:86px 0 0;display:flex;flex-direction:column;background:#0a0e11}#lcd.half #work{top:149px}
+#extras{display:none;color:#a6b6bd;padding:8px 12px;font:14px monospace;border-bottom:1px solid #42494d}#lcd.half #extras{display:block}
+.bar{height:27px;flex:none;justify-content:space-between;padding:0 8px;color:#bdd0d9;font:bold 12px Arial;background:#172126}
+.record{width:100%;height:30px;border:0;border-bottom:1px solid #283239;border-radius:0;background:#0a0e11;padding:0 8px;gap:6px;text-align:left;color:#eaf0f1}
+.record:hover,.record:focus-visible{background:#233c46}.record img,.flag{width:22px;height:16px;object-fit:contain}
+.region{width:24px;text-align:center;font:11px Arial;color:#bbccd2}.message{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:bold 15px Consolas,monospace}
+.cq{color:#90e8be}.af,.km{font:13px Consolas,monospace;color:#c8d5da;text-align:right}.af{width:46px}.km{width:66px}
+.keys{height:37px;gap:2px;margin-top:auto;flex:none}.keys button,.preset button{height:100%;flex:1;background:linear-gradient(#39444b,#20282e);border:1px solid #627077;border-radius:2px;color:white;font-weight:700}
+#work.activity{display:grid;grid-template-columns:minmax(0,1fr) 62px;grid-template-rows:18px 1fr;column-gap:2px}
+.activity .bar,.activity .record{display:grid;grid-template-columns:22px minmax(0,1fr) 40px 48px;gap:5px;padding:0 6px}
+.activity .bar{height:18px;font-size:11px}.activity .bar span:first-child{grid-column:span 2}.activity .bar span:not(:first-child){text-align:right}
+.activity .records{grid-area:2/1}.activity .record{height:24px}.activity .af,.activity .km,.activity .region{width:auto}
+.activity .keys{grid-area:1/2/3/3;flex-direction:column;height:100%;margin:0}.activity .keys button{height:auto;min-height:0;width:100%;font-size:13px}
+button,select,input{font:inherit}button,select{cursor:pointer}button:disabled{opacity:.45;cursor:default}button:focus-visible{outline:2px solid #ffd477;outline-offset:-2px}
+.detail{padding:6px 10px;color:#dadfe1;font:14px/1.45 Arial}.detail b{color:#94e2bc}.detail p{margin:3px 0}.preset{padding:10px;display:grid;gap:6px}.preset button{min-height:32px}
+.controls{margin:16px 0;max-width:660px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}.controls button,.controls select,.controls input{background:#222a30;border:1px solid #59636a;border-radius:3px;padding:5px;color:#eef2f3}
+.controls input[type=text]{width:8em}#notice{min-height:1.5em;color:#a8d4e4}.controls label{display:flex;align-items:center;gap:5px}.help,details{color:#adb9bf;font-size:13px}details pre{white-space:pre-wrap}
+.activity .record{grid-template-columns:22px minmax(0,1fr) 28px 36px 46px}
+.activity .bar{grid-template-columns:auto minmax(0,1fr) 28px 36px 46px}
+.activity .bar span:first-child{grid-column:auto}
+.activity .bar .unit,.snr{text-align:right}.snr{font:13px Consolas,monospace;color:#ffd78c}
+.activity .slotclock i{width:43px}
+#work.activity.dense{grid-template-rows:16px 1fr}.dense .bar{height:16px}
+.dense .record{height:17px}.dense .record img{height:13px;width:18px}
+.dense .message{font-size:14px;line-height:16px}
+.slotclock{display:inline-flex;align-items:center;gap:2px;font:11px/14px Consolas,monospace;color:#ecf4f6}
+.slotclock i{position:relative;display:inline-block;width:66px;text-align:center;background:#33444e;font-style:normal;isolation:isolate}
+.slotclock i::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--fill,0%);background:#236b61;z-index:-1}.slotclock i+ i::before{background:#775729}.slotclock time{min-width:40px}
+.station-form{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;padding:5px 8px}.station-form label{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:13px}.station-form input,.station-form select{width:112px;min-width:0;height:26px;background:#19262c;color:white;border:1px solid #647783;font-size:13px}
+.station-form small{grid-column:span 2;color:#c6d6dc}.qso-info{padding:4px 8px;line-height:23px;font-size:14px}.qso-info b{font: bold 16px Consolas,monospace;color:#a5e7ca}.qso-info p{margin:0}.qso-info .last{color:#b1c2cc;font:13px/20px Consolas,monospace}
+.mapbody{display:flex;min-height:0;flex:1}.mapbody canvas{width:356px;height:100%;background:url("{{WORLD_LAND}}") center/100% 100%}.mapnotes{width:124px;padding:5px;font:12px/1.5 Arial;overflow:hidden}.mapnotes b{color:#98e5c4}
+.mapplot{position:relative;width:356px;overflow:hidden}.mapdot{position:absolute;width:5px;height:5px;margin:-2.5px;background:#fff4c7;border-radius:50%;pointer-events:none}@media(prefers-reduced-motion:reduce){.mapdot{display:none}}
+.bar .slotclock{margin-left:auto}.activity .bar .slotclock{margin-left:0}
+#work.stockhome{background:black url("{{FT8_HOME}}") 0 -86px no-repeat}.radiohead.ft4~#work.stockhome{background-image:url("{{FT4_HOME}}")}
+</style>
+<main><h1>IC-705 · FT8 / FT4 操作样机</h1>
+<div class="frame"><section id="lcd" aria-label="480 × 272 电台屏幕">
+<div class="radiohead" role="img" aria-label="日版 1.40 原厂 USB-D 紧凑表头回放"></div>
+<div id="extras">VFO A　 USB-D　 FIL1</div><div id="work"></div></section></div>
+<div class="controls"><label>显示区域 <select id="layout"><option value="dense">紧凑 · 10 行</option><option value="large">宽行 · 7 行</option><option value="half">原半屏 · 4 行</option></select></label>
+<button id="demo">解码示例音频</button><button id="open">打开时隙 WAV</button><input id="file" type="file" accept=".wav" hidden></div>
+<div class="controls"><button id="presetKey">MENU · PRESET</button><button id="exitKey">机身 EXIT</button></div>
+<input id="gpsFile" type="file" accept=".json" hidden>
+<p id="notice" role="status">正在初始化音频模块…</p><p class="help">上方为 J140 原厂 LCD 静态回放。时隙条采用电脑 UTC。dB 为每条报文的估计信噪比（2500 Hz）。点 CQ 可预演应答。地图汇总本次进入后听到的台站。支持 12 kHz 单声道、16 位 PCM 时隙 WAV。</p>
+<details><summary>第三方代码及数据</summary><pre><!-- NOTICES --></pre></details></main>
+<script>/* COUNTRIES */</script>
+<script>var Module = {onRuntimeInitialized: () => startPanel()};</script>
+<script>/* STATION */</script><script>/* OPERATING */</script><script>/* AUDIO */</script></html>

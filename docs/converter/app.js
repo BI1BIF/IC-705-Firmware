@@ -53,12 +53,18 @@ for (const code of ["zh","en"]) el(code).onclick = () => {
 };
 render();
 
-el("demo-toggle").onclick = () => {
-  const play = !el("demo-play").hidden;
+const demos = {ftx: "ftx-tx2j", radio: "radio-demo"};
+function showDemo(play) {
+  const kind = el("demo-kind").value;
   el("demo-play").hidden = play;
   el("demo-stop").hidden = !play;
-  el("demo-screen").src = play ? "images/radio-demo.gif" : "images/radio-demo-cover.png";
-};
+  el("ftx-steps").hidden = kind !== "ftx";
+  el("radio-steps").hidden = kind !== "radio";
+  el("demo-screen").src = "images/" + demos[kind] + (play ? ".gif" : "-cover.png");
+}
+el("demo-toggle").onclick = () => showDemo(!el("demo-play").hidden);
+el("demo-kind").onchange = () => showDemo(false);
+showDemo(false);
 
 const source = el("source"), build = el("build"), save = el("save");
 
