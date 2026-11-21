@@ -4,6 +4,7 @@ from datetime import date
 import gzip
 import hashlib
 import json
+import re
 from pathlib import Path
 
 STOCK_SHA256 = "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45"
@@ -29,9 +30,16 @@ def main():
     patch_hash = hashlib.sha256(payload).hexdigest()
     root = Path(__file__).resolve().parents[1] / "docs/converter"
     notes = json.loads((root / "release-notes.json").read_text(encoding="utf-8-sig"))
-    if not notes["history"] or args.version not in [row["version"] for row in notes["history"]]:
-        parser.error("Add the new version to release-notes.json before publishing")
+    region = "J140" if stock_hash == STOCK_SHA256 else "E140"
+    seen_versions = set()
     for row in notes["history"]:
+        version = row["version"]
+        if not re.fullmatch(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", version) or version in seen_versions:
+            parser.error(f"Expected a unique vMAJOR.MINOR.PATCH release number, got {version!r}")
+        seen_versions.add(version)
+        regions = row.get("regions")
+        if not isinstance(regions, list) or not regions or any(r not in ("J140", "E140") for r in regions):
+            parser.error(f"List the supported regions for {version}")
         day = row.get("date")
         try:
             canonical = date.fromisoformat(day).isoformat()
@@ -39,6 +47,8 @@ def main():
             canonical = ""
         if not canonical or canonical != day:
             parser.error(f"Supply a valid YYYY-MM-DD release date for {row['version']}")
+    if not any(row["version"] == args.version and region in row["regions"] for row in notes["history"]):
+        parser.error(f"Add {args.version} for {region} to release-notes.json before publishing")
     for lang in ("zh", "en"):
         if not notes["features"].get(lang) or not all(row.get(lang) for row in notes["history"]):
             parser.error("Supply current features and release notes in both languages")

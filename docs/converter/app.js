@@ -38,8 +38,10 @@ function render() {
   for (const code of ["zh","en"]) el(code).setAttribute("aria-pressed", String(code === lang));
   filename();
   setState(state);
-  el("version").textContent = release?.version || (failed ? (lang === "en" ? "Unavailable" : "不可用") :
-    (lang === "en" ? "Select a file" : "请选择底包"));
+  const sharedVersion = releases.length === 2 && releases[0].version === releases[1].version ? releases[0].version : "";
+  const target = release ? release.version + " · " + release.region : sharedVersion;
+  el("version").textContent = failed ? (lang === "en" ? "Unavailable" : "不可用") :
+    target || (lang === "en" ? "Select a file" : "请选择底包");
   const name = release?.filename;
   el("sd-path").hidden = !name;
   if (name) {
@@ -52,7 +54,7 @@ function render() {
   el("history").replaceChildren(...notes.history.map((row, index) => {
     const entry = document.createElement("article");
     entry.className = "entry";
-    const title = node("h3", row.version + (index ? "" : lang === "en" ? " · Latest" : " · 最新版"));
+    const title = node("h3", row.version + " · " + row.regions.join(" / ") + (index ? "" : lang === "en" ? " · Latest" : " · 最新版"));
     if (row.date) {
       const date = node("time", row.date);
       date.dateTime = row.date;
@@ -192,14 +194,14 @@ build.onclick = async () => {
 
 try {
   if (!globalThis.DecompressionStream || !globalThis.crypto?.subtle) throw new Error("unsupported");
-  for (const [manifest, filename] of [["latest.json", "705J140.dat"], ["e140.json", "705E140.dat"]]) {
+  for (const [manifest, region] of [["latest.json", "J140"], ["e140.json", "E140"]]) {
     const item = await (await get("converter/" + manifest)).json();
     if (![item.stock, item.target, item.patchHash].every(s => /^[0-9a-f]{64}$/.test(s)) ||
         item.patch !== item.patchHash + ".xor.gz" || !Number.isSafeInteger(item.size) ||
         item.size <= 0 || !item.version) throw new Error("loadError");
-    releases.push({...item, filename});
+    releases.push({...item, region, filename: "705" + region + ".dat"});
   }
-  notes = releases[0].notes;
+  notes = await (await get("converter/release-notes.json")).json();
   render();
   source.disabled = false;
 } catch (error) {

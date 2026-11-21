@@ -31,11 +31,15 @@ async function main() {
     const input = page.locator("#source");
     await page.waitForFunction(() => !document.querySelector("#source").disabled);
     const history = JSON.parse(fs.readFileSync(path.join(site, "converter", "release-notes.json"), "utf8")).history;
+    assert.equal(await page.locator("#version").innerText(), "v1.3.2");
     for (const language of ["en", "zh"]) {
       await page.locator("#" + language).click();
       const dates = await page.locator("#history h3 time").evaluateAll(nodes =>
         nodes.map(node => [node.dateTime, node.textContent]));
       assert.deepEqual(dates, history.map(row => [row.date, row.date]));
+      const headings = await page.locator("#history h3").allTextContents();
+      assert.deepEqual(headings, history.map((row, i) => [row.date, row.version, row.regions.join(" / "),
+        ...(i ? [] : [language === "en" ? "Latest" : "最新版"])].join(" · ")));
     }
     const stock = fs.readFileSync(path.join(root,"firmware","705E140.dat"));
     const damaged = Buffer.from(stock);
@@ -54,7 +58,7 @@ async function main() {
     const [japanOutput] = await Promise.all([page.waitForEvent("download"),page.locator("#build").click()]);
     assert.equal(japanOutput.suggestedFilename(),"705J140.dat");
     assert(fs.readFileSync(await japanOutput.path()).equals(fs.readFileSync(path.join(trial,"705J140.dat"))));
-    assert.match(await page.locator("#version").innerText(),/J140.*TX4\.1.*TX2j\.1/);
+    assert.equal(await page.locator("#version").innerText(), "v1.3.2 · J140");
     assert.equal(await page.locator("#output-path").innerText(),"IC-705/705J140.dat");
 
     await rejected("705E140.dat",damaged);
@@ -64,7 +68,7 @@ async function main() {
     await page.locator("#en").click();
     assert.equal(await page.locator("#save").getAttribute("download"),"705E140.dat");
     assert.equal(await page.locator("#output-path").innerText(),"IC-705/705E140.dat");
-    assert.match(await page.locator("#version").innerText(),/E140.*TX4\.1.*TX2j\.1/);
+    assert.equal(await page.locator("#version").innerText(), "v1.3.2 · E140");
     assert.match(await page.locator("#history article").first().innerText(),/hidden audio peak meter/);
     await page.locator("#zh").click();
 

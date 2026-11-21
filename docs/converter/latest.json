@@ -1,5 +1,5 @@
 {
-  "version": "J140 · CW D6 · SSTV RX4-TX4.1 · FT8/FT4 TX2j.1",
+  "version": "v1.3.2",
   "size": 12259086,
   "stock": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
   "target": "eb7d2d1bb969241e17dbc7effb387cf4c9d73ab2e58c7267c4c461014febff65",
@@ -24,64 +24,70 @@
     },
     "history": [
       {
-        "version": "E140 · CW D6 · SSTV RX4-TX4.1 · FT8/FT4 TX2j.1",
+        "version": "v1.3.2",
         "date": "2026-11-21",
+        "regions": [
+          "J140",
+          "E140"
+        ],
         "zh": "修正 SSTV 待机时隐藏的音量峰值反复请求界面重绘。模拟回放中，32 次峰值变化触发的多余重绘从 32 次降到 0；收图状态及进度仍会刷新。实际频谱流畅度待真机复测。",
         "en": "Fixed redundant screen redraw requests from the hidden audio peak meter in SSTV standby. In emulation, 32 peak changes caused zero extra redraws, down from 32. Receive status and image progress still update. Spectrum smoothness awaits hardware confirmation."
       },
       {
-        "version": "J140 · CW D6 · SSTV RX4-TX4.1 · FT8/FT4 TX2j.1",
+        "version": "v1.3.1",
         "date": "2026-11-21",
-        "zh": "修正 SSTV 待机时隐藏的音量峰值反复请求界面重绘。模拟回放中，32 次峰值变化触发的多余重绘从 32 次降到 0；收图状态及进度仍会刷新。实际频谱流畅度待真机复测。",
-        "en": "Fixed redundant screen redraw requests from the hidden audio peak meter in SSTV standby. In emulation, 32 peak changes caused zero extra redraws, down from 32. Receive status and image progress still update. Spectrum smoothness awaits hardware confirmation."
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "两版均修正部分 SD 卡就绪状态下 FT 本台呼号无法保存或读回的问题。输入呼号后先在键盘点「确定」，再在本台设置点「保存」。欧／美版同时修正通联日志停在「待存卡」的问题，新增 Check SD、SD busy 和 SD error 提示。两版模拟冷启动读回呼号、欧版模拟日志写入均通过，实体卡待复测。",
+        "en": "Both regions now recognize a second valid SD state when saving and loading the FT station callsign. Confirm the callsign on the keyboard, then tap Save in station settings. E140 also fixes pending QSO log retries and adds Check SD, SD busy and SD error messages. Callsign recovery and E140 logging passed in emulation. Physical card verification is pending."
       },
       {
-        "version": "E140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
-        "zh": "修正欧／美版在部分 SD 卡就绪状态下点「重试存卡」仍停在「待存卡」的问题，同时修正 FT 本台呼号的保存和读回。日志页用 Check SD 提示检查卡，SD busy 表示正在处理，SD error 表示文件读写或校验失败。已通过模拟通联和冷启动读回，实体卡待复测。",
-        "en": "Fixed an SD readiness check that could leave a QSO pending after a retry and prevent station callsign settings from being saved or loaded. The log now shows Check SD, SD busy or SD error. Simulated QSO logging and callsign recovery after restart passed. Physical card verification is pending.",
-        "date": "2026-11-21"
+        "version": "v1.3.0",
+        "date": "2026-11-20",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "首次公开机内 FT8／FT4 收发、中文操作和 ADIF 日志。TX2j 对齐顶栏并减少重复绘字，增加接收音频中断及暂停提示。模拟遥控指令与录音单独回放时，FT8 连续六隙、FT4 连续八隙均有解码。实体转轮手感与 ESP32 遥控偶发停更仍待实测。欧／美版 1.40 现可在浏览器生成对应固件。已移植 CW 译码、SSTV 收发与图片存取、FT8／FT4 收发与 ADIF 日志。欧版已完成本地仿真验证，实体电台安装与射频收发待反馈。",
+        "en": "First public release of on-radio FT8/FT4 RX/TX, Chinese controls and ADIF logging. TX2j aligns the header, skips repeated text draws and reports missing or paused RX audio. A replay with remote commands decoded six consecutive FT8 slots and eight FT4 slots. Dial responsiveness and intermittent stalls with an ESP32 remote still need hardware testing. The converter now builds European/US 1.40 firmware. The port includes CW decoding, SSTV RX/TX and picture storage, and FT8/FT4 RX/TX with ADIF logging. Tested in emulation. Installation on a physical E140 radio and on-air operation await confirmation."
       },
       {
-        "version": "J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
-        "zh": "修正日版在部分 SD 卡就绪状态下无法保存或读回 FT 本台呼号的问题。输入呼号后，在键盘点「确定」，再回本台设置点「保存」。模拟冷启动已从同一张卡读回呼号，实体卡待复测。",
-        "en": "Fixed an SD readiness check that could prevent the FT station callsign from being saved or restored. Confirm the callsign on the keyboard, then tap Save in station settings. A fresh simulated radio restored the callsign from the same card. Physical card verification is pending.",
-        "date": "2026-11-21"
-      },
-      {
-        "version": "E140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j",
-        "zh": "欧／美版 1.40 现可在浏览器生成对应固件。已移植 CW 译码、SSTV 收发与图片存取、FT8／FT4 收发与 ADIF 日志。欧版已完成本地仿真验证，实体电台安装与射频收发待反馈。",
-        "en": "The converter now builds European/US 1.40 firmware. The port includes CW decoding, SSTV RX/TX and picture storage, and FT8/FT4 RX/TX with ADIF logging. Tested in emulation. Installation on a physical E140 radio and on-air operation await confirmation.",
-        "date": "2026-11-20"
-      },
-      {
-        "version": "CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j",
-        "zh": "首次公开机内 FT8／FT4 收发、中文操作和 ADIF 日志。TX2j 对齐顶栏并减少重复绘字，增加接收音频中断及暂停提示。模拟遥控指令与录音单独回放时，FT8 连续六隙、FT4 连续八隙均有解码。实体转轮手感与 ESP32 遥控偶发停更仍待实测。",
-        "en": "First public release of on-radio FT8/FT4 RX/TX, Chinese controls and ADIF logging. TX2j aligns the header, skips repeated text draws and reports missing or paused RX audio. A replay with remote commands decoded six consecutive FT8 slots and eight FT4 slots. Dial responsiveness and intermittent stalls with an ESP32 remote still need hardware testing.",
-        "date": "2026-11-20"
-      },
-      {
-        "version": "CW D6 · SSTV RX4-TX4",
+        "version": "v1.2.0",
+        "date": "2026-11-19",
+        "regions": [
+          "J140"
+        ],
         "zh": "发射模式由 2 种扩展到 23 种，与接收模式对齐。全部模式已通过电脑端菜单和整帧音频验证，新增模式待逐项真机互收。",
-        "en": "Expanded transmission from 2 to 23 modes, matching the receiver. All modes passed emulated menu and full-frame audio checks. On-air testing of each added mode is pending.",
-        "date": "2026-11-19"
+        "en": "Expanded transmission from 2 to 23 modes, matching the receiver. All modes passed emulated menu and full-frame audio checks. On-air testing of each added mode is pending."
       },
       {
-        "version": "CW D6 · SSTV RX4-TX3",
+        "version": "v1.1.1",
+        "date": "2026-11-19",
+        "regions": [
+          "J140"
+        ],
         "zh": "改善 Robot 36 弱信号续画，减少误报发射忙，并将 SEND 移到下方。",
-        "en": "Improved Robot 36 frame continuity during fades, reduced false TX busy indications and moved SEND to the lower button.",
-        "date": "2026-11-19"
+        "en": "Improved Robot 36 frame continuity during fades, reduced false TX busy indications and moved SEND to the lower button."
       },
       {
-        "version": "CW D6 · SSTV RX4-TX2",
+        "version": "v1.1.0",
+        "date": "2026-11-19",
+        "regions": [
+          "J140"
+        ],
         "zh": "增加屏幕一键发图，无需手咪 PTT。",
-        "en": "Added one-tap transmission from the screen without a microphone PTT.",
-        "date": "2026-11-19"
+        "en": "Added one-tap transmission from the screen without a microphone PTT."
       },
       {
-        "version": "CW D6 · SSTV RX4-TX1",
+        "version": "v1.0.0",
+        "date": "2026-11-19",
+        "regions": [
+          "J140"
+        ],
         "zh": "接入原厂 SD 卡选图，首次合入 Robot 36 和 Martin M1 发射。",
-        "en": "Integrated the native SD card picture picker and added Robot 36 and Martin M1 transmission.",
-        "date": "2026-11-19"
+        "en": "Integrated the native SD card picture picker and added Robot 36 and Martin M1 transmission."
       }
     ]
   }
