@@ -1,10 +1,10 @@
 {
-  "version": "J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
+  "version": "J140 · CW D6 · SSTV RX4-TX4.1 · FT8/FT4 TX2j.1",
   "size": 12259086,
   "stock": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
-  "target": "3d9fa69f89b3c1c6b3bcd2be34825c516ec9f2c934c474fb41a3d6df88e7c9d9",
-  "patch": "bf36b2b1c61e9a228f0b448e22d92caa43faaf336c370649ba800426ed07c9ed.xor.gz",
-  "patchHash": "bf36b2b1c61e9a228f0b448e22d92caa43faaf336c370649ba800426ed07c9ed",
+  "target": "eb7d2d1bb969241e17dbc7effb387cf4c9d73ab2e58c7267c4c461014febff65",
+  "patch": "d00eb569cb4e621ffa4c4377cef38776c0cd57410378f4b2a44284364e92760e.xor.gz",
+  "patchHash": "d00eb569cb4e621ffa4c4377cef38776c0cd57410378f4b2a44284364e92760e",
   "notes": {
     "features": {
       "zh": [
@@ -23,6 +23,18 @@
       ]
     },
     "history": [
+      {
+        "version": "E140 · CW D6 · SSTV RX4-TX4.1 · FT8/FT4 TX2j.1",
+        "date": "2026-11-21",
+        "zh": "修正 SSTV 待机时隐藏的音量峰值反复请求界面重绘。模拟回放中，32 次峰值变化触发的多余重绘从 32 次降到 0；收图状态及进度仍会刷新。实际频谱流畅度待真机复测。",
+        "en": "Fixed redundant screen redraw requests from the hidden audio peak meter in SSTV standby. In emulation, 32 peak changes caused zero extra redraws, down from 32. Receive status and image progress still update. Spectrum smoothness awaits hardware confirmation."
+      },
+      {
+        "version": "J140 · CW D6 · SSTV RX4-TX4.1 · FT8/FT4 TX2j.1",
+        "date": "2026-11-21",
+        "zh": "修正 SSTV 待机时隐藏的音量峰值反复请求界面重绘。模拟回放中，32 次峰值变化触发的多余重绘从 32 次降到 0；收图状态及进度仍会刷新。实际频谱流畅度待真机复测。",
+        "en": "Fixed redundant screen redraw requests from the hidden audio peak meter in SSTV standby. In emulation, 32 peak changes caused zero extra redraws, down from 32. Receive status and image progress still update. Spectrum smoothness awaits hardware confirmation."
+      },
       {
         "version": "E140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
         "zh": "修正欧／美版在部分 SD 卡就绪状态下点「重试存卡」仍停在「待存卡」的问题，同时修正 FT 本台呼号的保存和读回。日志页用 Check SD 提示检查卡，SD busy 表示正在处理，SD error 表示文件读写或校验失败。已通过模拟通联和冷启动读回，实体卡待复测。",

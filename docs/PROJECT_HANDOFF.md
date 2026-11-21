@@ -1,5 +1,7 @@
 # IC-705 项目接续记录
 
+**2026-11-21 转换页 SSTV RX4-TX4.1。** 日版和欧／美版分别基于各自当前的 FT8/FT4 TX2j.1 生成，保留呼号和 SD 日志更新。待机峰值 A/B 两区均为 32→0 次多余重绘，双槽启动和浏览器逐字节转换通过。下一项真机验收为进 SSTV 后待机频谱和转动拨盘流畅度。构建与报告见 [脚本](../tools/build_705_sstv_refresh_test.py) 和 [.analysis/sstv-refresh-tx2j1](../.analysis/sstv-refresh-tx2j1/)。
+
 **转换页语言与更新日志。** 顶栏切换中英文并记住选择，选文件前显示刷机风险。后续发布先更新 `docs/converter/release-notes.json` 中的当前功能，在 history 顶部添加新版本与中英文变更说明，再运行原构建命令并提交生成文件。构建器校验首条版本与目标版本一致，将功能与日志写入同一版本清单。
 
 **2026-11-19 浏览器转换页。** 应用户要求，GitHub Pages 以 main 的 docs 目录发布，[固定入口](https://bi1bif.github.io/IC-705-Firmware/)从官网日版 1.40 DAT 在本地生成 CW D6 / SSTV RX4-TX4。网页重新公开差分数据。以后用 tools/build_705_pages_patch.py 传入原厂 DAT、已验收目标 DAT、版本名和已知目标 SHA-256，提交生成的版本清单和补丁，入口沿用。

@@ -8,7 +8,7 @@ const { chromium } = require("playwright-core");
 
 async function main() {
   const root = path.resolve(__dirname, "..");
-  const trial = path.join(root, ".analysis", "e140-log-retry");
+  const trial = path.join(root, ".analysis", "sstv-refresh-tx2j1");
   const site = path.join(root, "docs");
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
@@ -53,8 +53,8 @@ async function main() {
     await set("705E140.dat",japanese);
     const [japanOutput] = await Promise.all([page.waitForEvent("download"),page.locator("#build").click()]);
     assert.equal(japanOutput.suggestedFilename(),"705J140.dat");
-    assert(fs.readFileSync(await japanOutput.path()).equals(fs.readFileSync(path.join(root,".analysis","j140-ft-sd","705J140.dat"))));
-    assert.match(await page.locator("#version").innerText(),/J140.*TX2j\.1/);
+    assert(fs.readFileSync(await japanOutput.path()).equals(fs.readFileSync(path.join(trial,"705J140.dat"))));
+    assert.match(await page.locator("#version").innerText(),/J140.*TX4\.1.*TX2j\.1/);
     assert.equal(await page.locator("#output-path").innerText(),"IC-705/705J140.dat");
 
     await rejected("705E140.dat",damaged);
@@ -64,8 +64,8 @@ async function main() {
     await page.locator("#en").click();
     assert.equal(await page.locator("#save").getAttribute("download"),"705E140.dat");
     assert.equal(await page.locator("#output-path").innerText(),"IC-705/705E140.dat");
-    assert.match(await page.locator("#version").innerText(),/E140.*TX2j\.1/);
-    assert.match(await page.locator("#history article").first().innerText(),/SD busy/);
+    assert.match(await page.locator("#version").innerText(),/E140.*TX4\.1.*TX2j\.1/);
+    assert.match(await page.locator("#history article").first().innerText(),/hidden audio peak meter/);
     await page.locator("#zh").click();
 
     const dir = path.join(trial,"browser");
