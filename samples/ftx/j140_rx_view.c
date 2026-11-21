@@ -465,7 +465,6 @@ __attribute__((section(".ftx_controls"),noinline)) void ft_label(const char *s,u
 __attribute__((noinline)) void ft_blank(unsigned y){static const float bg[]={.035f,.055f,.065f,1};rectangle(bg,0,y,y?360:384,272-y);}
 
 void ft_key(const char *s,unsigned x,unsigned y,unsigned w,unsigned h) {
-    static const float accent[]={.51f,.79f,.94f,1};
     static const float menu_bg[]={.063f,.122f,.165f,1}, rule[]={.22f,.29f,.33f,1};
     if(w==350 && x==4){
         for(unsigned i=0;i<h;i++){
@@ -495,7 +494,6 @@ void ft_key(const char *s,unsigned x,unsigned y,unsigned w,unsigned h) {
         blit(line+170,-352,3,x+dx+w-2,272-y-end-dy,2,end-i);
         i=end;
     }
-    if(ft_page==FT_LIST && x==399 && y==89)rectangle(accent,x,y+1,3,h-2);
     unsigned width=label_width(s);
     ft_label(s,x+(w>width?(w-width)/2:2),y+(h-15)/2,12,15);
     key_height=0;

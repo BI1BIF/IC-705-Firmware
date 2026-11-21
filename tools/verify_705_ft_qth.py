@@ -91,6 +91,8 @@ def verify(folder, region):
         assert [headers[k] for k in ("AB"[slot],"QTH","dB","Hz","km")]==[101,199,269,307,362],headers
         guest.surface.select_target()
         lcd=Image.frombytes("RGBA",(480,272),bytes(guest.surface.pixels)).convert("RGB")
+        # The two live action keys use the same factory left bevel.
+        assert lcd.crop((399,90,402,121)).tobytes()==lcd.crop((399,126,402,157)).tobytes()
         lcd.crop((0,84,480,272)).save(folder/f"QTH-{'AB'[slot]}.png")
     (folder/"qth.json").write_text(json.dumps(dict(region=region,sha256=digest(dat),rows=ys,
         province_boundaries=31,slot_frames=["A","B"]),ensure_ascii=False,indent=2),encoding="utf8")

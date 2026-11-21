@@ -43,6 +43,7 @@ def build(source, out):
     run(["arm-none-eabi-as",src/"v132_qth.S","-o","site.o"],cwd=out,check=True)
     # Fixed-width Thumb instructions are assembled at their final address.
     edits={
+        0x2037cfa2:"b.n .+36",  # skip first-key accent; continue with normal label painting
         0x20369bda:"b.w qth_detail",
         0x2037cc08:"bl qth_copy",
         0x2037d502:"movs r1,#199",
