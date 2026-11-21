@@ -1,10 +1,10 @@
 {
-  "version": "CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j",
+  "version": "J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
   "size": 12259086,
   "stock": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
-  "target": "8dcb44ae45c02d963d4eba6c9feca23d97f1e90b1f0409f75366de7d467c3c68",
-  "patch": "8dadf23053636f5118c3198cd4fef2eb338d473cc68edda4228cc8f1c9cbba94.xor.gz",
-  "patchHash": "8dadf23053636f5118c3198cd4fef2eb338d473cc68edda4228cc8f1c9cbba94",
+  "target": "3d9fa69f89b3c1c6b3bcd2be34825c516ec9f2c934c474fb41a3d6df88e7c9d9",
+  "patch": "bf36b2b1c61e9a228f0b448e22d92caa43faaf336c370649ba800426ed07c9ed.xor.gz",
+  "patchHash": "bf36b2b1c61e9a228f0b448e22d92caa43faaf336c370649ba800426ed07c9ed",
   "notes": {
     "features": {
       "zh": [
@@ -23,6 +23,16 @@
       ]
     },
     "history": [
+      {
+        "version": "E140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
+        "zh": "2026-11-21 · 修正欧／美版在部分 SD 卡就绪状态下点「重试存卡」仍停在「待存卡」的问题，同时修正 FT 本台呼号的保存和读回。日志页用 Check SD 提示检查卡，SD busy 表示正在处理，SD error 表示文件读写或校验失败。已通过模拟通联和冷启动读回，实体卡待复测。",
+        "en": "2026-11-21 · Fixed an SD readiness check that could leave a QSO pending after a retry and prevent station callsign settings from being saved or loaded. The log now shows Check SD, SD busy or SD error. Simulated QSO logging and callsign recovery after restart passed. Physical card verification is pending."
+      },
+      {
+        "version": "J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
+        "zh": "2026-11-21 · 修正日版在部分 SD 卡就绪状态下无法保存或读回 FT 本台呼号的问题。输入呼号后，在键盘点「确定」，再回本台设置点「保存」。模拟冷启动已从同一张卡读回呼号，实体卡待复测。",
+        "en": "2026-11-21 · Fixed an SD readiness check that could prevent the FT station callsign from being saved or restored. Confirm the callsign on the keyboard, then tap Save in station settings. A fresh simulated radio restored the callsign from the same card. Physical card verification is pending."
+      },
       {
         "version": "E140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j",
         "zh": "欧／美版 1.40 现可在浏览器生成对应固件。已移植 CW 译码、SSTV 收发与图片存取、FT8／FT4 收发与 ADIF 日志。欧版已完成本地仿真验证，实体电台安装与射频收发待反馈。",

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>欧版 FT 通联日志测试</title>
+<style>body{max-width:38rem;margin:10vh auto;padding:0 1.2rem;font:1rem/1.65 system-ui;color:#162633}h1{font-size:1.65rem}button,a{font:inherit}button{padding:.4rem 1rem}</style>
+<h1>欧版 FT 通联日志测试</h1>
+<p>选择 Icom 原厂欧／美版 1.40 的 705E140.dat。本页在本机生成测试固件。刷机前请备份设置并确保供电稳定。当前仍在「待存卡」的通联请先手工记下，重启会清除待存记录。</p>
+<label>原厂 DAT <input type="file" id="source" accept=".dat"></label>
+<p><button id="build" disabled>生成欧版测试固件</button></p><p id="status" role="status"></p>
+<a id="save" download="705E140.dat" hidden>保存 705E140.dat</a>
+<script>
+const source=document.querySelector('#source'),build=document.querySelector('#build'),save=document.querySelector('#save'),message=document.querySelector('#status');
+let url;
+source.onchange=()=>{if(url)URL.revokeObjectURL(url);save.hidden=true;save.removeAttribute('href');build.disabled=!source.files.length;message.textContent='';};
+async function sha(bytes){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');}
+build.onclick=async()=>{
+  source.disabled=build.disabled=true;
+  try {
+    const bytes=new Uint8Array(await source.files[0].arrayBuffer());
+    if(await sha(bytes)!=='{{STOCK_SHA}}')throw Error('请选择与欧／美版 1.40 完全匹配的原厂 DAT。');
+    message.textContent='正在生成并校验…';
+    const packed=Uint8Array.from(atob('{{PATCH_BASE64}}'),c=>c.charCodeAt(0));
+    const delta=new Uint8Array(await new Response(new Blob([packed]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+    if(delta.length!==bytes.length)throw Error('补丁长度校验失败。');
+    for(let i=0;i<bytes.length;i++)bytes[i]^=delta[i];
+    if(await sha(bytes)!=='{{OUTPUT_SHA}}')throw Error('输出校验失败。');
+    if(url)URL.revokeObjectURL(url);
+    save.href=url=URL.createObjectURL(new Blob([bytes]));save.hidden=false;
+    message.textContent='校验通过。请将下载的文件放到 SD 卡的 IC-705 目录。';save.click();
+  } catch(error){message.textContent=error.message;}
+  finally{source.disabled=build.disabled=false;}
+};
+</script></html>

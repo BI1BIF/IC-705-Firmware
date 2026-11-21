@@ -17,6 +17,16 @@
   },
   "history": [
     {
+      "version": "E140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
+      "zh": "2026-11-21 · 修正欧／美版在部分 SD 卡就绪状态下点「重试存卡」仍停在「待存卡」的问题，同时修正 FT 本台呼号的保存和读回。日志页用 Check SD 提示检查卡，SD busy 表示正在处理，SD error 表示文件读写或校验失败。已通过模拟通联和冷启动读回，实体卡待复测。",
+      "en": "2026-11-21 · Fixed an SD readiness check that could leave a QSO pending after a retry and prevent station callsign settings from being saved or loaded. The log now shows Check SD, SD busy or SD error. Simulated QSO logging and callsign recovery after restart passed. Physical card verification is pending."
+    },
+    {
+      "version": "J140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j.1",
+      "zh": "2026-11-21 · 修正日版在部分 SD 卡就绪状态下无法保存或读回 FT 本台呼号的问题。输入呼号后，在键盘点「确定」，再回本台设置点「保存」。模拟冷启动已从同一张卡读回呼号，实体卡待复测。",
+      "en": "2026-11-21 · Fixed an SD readiness check that could prevent the FT station callsign from being saved or restored. Confirm the callsign on the keyboard, then tap Save in station settings. A fresh simulated radio restored the callsign from the same card. Physical card verification is pending."
+    },
+    {
       "version": "E140 · CW D6 · SSTV RX4-TX4 · FT8/FT4 TX2j",
       "zh": "欧／美版 1.40 现可在浏览器生成对应固件。已移植 CW 译码、SSTV 收发与图片存取、FT8／FT4 收发与 ADIF 日志。欧版已完成本地仿真验证，实体电台安装与射频收发待反馈。",
       "en": "The converter now builds European/US 1.40 firmware. The port includes CW decoding, SSTV RX/TX and picture storage, and FT8/FT4 RX/TX with ADIF logging. Tested in emulation. Installation on a physical E140 radio and on-air operation await confirmation."
