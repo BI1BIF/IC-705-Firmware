@@ -22,10 +22,13 @@ LABELS = {
     "late":"本轮已过","next":"下次发射","other":"来叫","canceled":"已取消待发","cutdone":"已中断",
     "complete":"已发结束语","contact":"通联","resend":"重发","locator":"网格","report":"信号报告","rreport":"确认报告","again":"重试存卡",
 }
-def glyph_masks(chars):
+QTH_NAMES = "中国台湾 新疆 西藏 北京 黑龙江 吉林 辽宁 天津 内蒙古 河北 山西 上海 山东 江苏 浙江 江西 福建 安徽 河南 湖北 湖南 广东 广西 海南 四川 重庆 贵州 云南 陕西 甘肃 宁夏 青海".split()
+
+
+def glyph_masks(chars, font="ft-panel-sc.ttf"):
     # 15 px type in a 16 x 15 cell. All glyphs share the same baseline.
     scale = 8
-    face = ImageFont.truetype(str(ROOT / "samples/ftx/font/ft-panel-sc.ttf"), 15 * scale)
+    face = ImageFont.truetype(str(ROOT / "samples/ftx/font" / font), 15 * scale)
     masks = bytearray()
     for ch in chars:
         width = 8 if ch.isascii() else 16
@@ -115,17 +118,34 @@ def build_panel_assets(codes, out):
     for i,code in enumerate(codes):
         region[i]={"gb-eng":"英格兰","gb-sct":"苏格兰","gb-wls":"威尔士"}.get(code,region[i])
     labels=list(LABELS.values())
-    strings=labels+region
-    chars=sorted(set("".join(strings)))
+    chars=sorted(set("".join(labels+region)))  # preserve the original 45 KB glyph bank
+    region[codes.index("hk")]="中国香港"
+    region[codes.index("mo")]="中国澳门"
+    places=region+QTH_NAMES
+    short=[name if len(name)<=4 else name[:3]+"…" for name in places]
+    strings=labels+places+short
     (out/"glyphs.bin").write_bytes(glyph_masks(chars))
     narrow=sum(ord(c)<128 for c in chars)
+    from tools.build_705_ftx_rx import PIXEL_OFFSET, GLYPH_OFFSET
+    panel_at=PIXEL_OFFSET+len(codes)*128
+    palette=coverage_palette()
+    extra=sorted(set("".join(strings))-set(chars))
+    pool_size=sum(2*(len(s)+1) for s in strings)
+    end=panel_at+8+2*len(strings)+pool_size+len(palette)
+    padding=(-(end-GLYPH_OFFSET))%120
+    first_extra=(end+padding-GLYPH_OFFSET)//120+1
+    ids={ch:i+1 for i,ch in enumerate(chars)}
+    ids.update({ch:first_extra+i for i,ch in enumerate(extra)})
     offsets=[]; pool=bytearray()
     for s in strings:
         offsets.append(len(pool))
-        for ch in s: pool.extend(pack("<H",chars.index(ch)+1))
+        for ch in s: pool.extend(pack("<H",ids[ch]))
         pool.extend(bytes(2))
-    payload=pack("<4H",len(strings)*2,len(strings)*2+len(pool),narrow,len(labels))+b"".join(pack("<H",i) for i in offsets)+pool+coverage_palette()
+    payload=pack("<4H",len(strings)*2,len(strings)*2+len(pool),narrow,len(labels))+b"".join(pack("<H",i) for i in offsets)+pool+palette+bytes(padding)+glyph_masks(extra,"ft-qth-sc.ttf")
     defines = [f'#define Z_{k} "\\177\\{i+1:03o}"' for i,k in enumerate(LABELS)]
+    defines += [f"#define FT_CHINA {codes.index('cn')+1}", f"#define FT_REGIONS {len(codes)}",
+                f"#define FT_LIST_NAMES {len(labels)+len(places)}",
+                f"#define FT_PROVINCE_SERIES {sum(1<<(ord(c)-65) for c in 'GHIDABCEFKLR')}u"]
     # Centre-line colours for the existing 29..39 pixel key heights; the
     # first two rows describe plain screen and menu backgrounds.
     heights = [[0] * 15 for _ in range(40)]

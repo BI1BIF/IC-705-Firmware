@@ -46,6 +46,7 @@ void view_reset(unsigned ft4)
 #ifdef FTX_DEVICE
 #include "atlas_tag.h"
 #include "ft_panel_words.h"
+#include "qth.h"
 #include "j140_rx_distance.h"
 #include "j140_tx.h"
 static void index_rows(void)
@@ -151,7 +152,9 @@ static unsigned sender_flag(const struct Atlas *a,const char *call)
 #ifdef FTX_DEVICE
 __attribute__((section(".ft_panel_code"),noinline)) unsigned ft_place_id(const struct DisplayRow *r){
     const struct Atlas *a=flag_atlas();
-    return a && r && r->flag?sender_flag(a,r->text+r->flag-1):0;
+    if(!a || !r || !r->flag) return 0;
+    const char *sender=r->text+r->flag-1;
+    return qth_id(sender_flag(a,sender),sender);
 }
 #endif
 void view_publish(unsigned slot, unsigned count)
@@ -252,18 +255,10 @@ __attribute__((noinline,section(".ftx_controls"))) static void list_band(const f
 #include "ft_key_shades.h"
 static unsigned key_height;
 
+#include "qth_bar.h"
 __attribute__((section(".ft_extra"),noinline))
 void ft_slot_bar(unsigned slot,unsigned ms) {
-    static const float edge[]={.43f,.56f,.62f,1},rail[]={.055f,.09f,.12f,1},fill[]={.22f,.70f,.90f,1};
-    unsigned period=ftx_ft4?7500:15000;
-    static const float bar[]={.09f,.14f,.16f,1};
-    rectangle(bar,132,86,15,16);
-    rectangle(edge,147,90,72,8);
-    rectangle(rail,148,91,70,6);
-    if(ms>=period)return;
-    text(slot&1?"B":"A",133,88-(slot&1),12,15);
-    unsigned w=70*ms/period;
-    if(w)rectangle(fill,148,91,w,6);
+    paint_slot_bar(slot,ms,ft_page==FT_LIST?100:132);
 }
 void ft_header(void)
 {
@@ -322,7 +317,7 @@ static unsigned draw_message(const char *s,unsigned y,unsigned selected)
     static const char chars[]=FT_RX_CHARS;
     const uint8_t *atlas=(const uint8_t *)flag_atlas();
     unsigned n=0;
-    for(;atlas && n<28 && s[n];n++){
+    for(;atlas && n<20 && s[n];n++){
         const char *found=strchr(chars,s[n]);
         unsigned i=found?(unsigned)(found-chars):(unsigned)(strchr(chars,'?')-chars);
         const uint8_t *tile=atlas+(i<FT_RX_SPLIT?FT_RX_FIRST:FT_RX_SECOND)+448*i+224*selected;
@@ -602,7 +597,7 @@ void view_draw(unsigned slot,unsigned phase)
     }
 #endif
 #ifdef FTX_DEVICE
-    ft_slot_bar(slot,status?~0u:phase/8);
+    if(!status) ft_slot_bar(slot,phase/8);
     extern unsigned ftx_ft4;
     if (ftx_memory && (ftx_memory->plan.wf.time_osr==1 || ftx_memory->plan.wf.freq_osr==1)) text("ECO",42,88,12,15);
 #else
@@ -613,7 +608,7 @@ void view_draw(unsigned slot,unsigned phase)
     else {text("RX A",80,86,12,15);text("RX B",150,86,12,15);}
 #endif
 #ifdef FTX_DEVICE
-    text("QTH",226,87,12,15);
+    text("QTH",199,87,12,15);
 #endif
     text("dB",269,88,12,15);text("Hz",307,87,12,15);
 #ifdef FTX_DEVICE
@@ -650,12 +645,10 @@ void view_draw(unsigned slot,unsigned phase)
         text(r->slot&1?((r->assisted&1)?"B*":"B"):((r->assisted&1)?"A*":"A"),4,y+2,12,15);
 #ifdef FTX_DEVICE
         unsigned flag=draw_flag(r,serial[front]-batch->count+i,18,y+2);
-        unsigned end=40+draw_message(r->text,y+2,(int)(first+n)==ft_selected);
-        if(flag && end<253){
-            unsigned place=(unsigned char)Z_again[1]+flag;
-            unsigned width=panel_word(place,0,0,0,0);
-            if(width<=253-end)panel_word(place,253-width,y+1,width,(int)(first+n)==ft_selected?3:2);
-        }
+        draw_message(r->text,y+2,(int)(first+n)==ft_selected);
+        mark_long_message(r->text,y+1,(int)(first+n)==ft_selected);
+        if(flag)panel_word(FT_LIST_NAMES+qth_id(flag,r->text+r->flag-1),199,y+1,64,
+                          (int)(first+n)==ft_selected?3:2);
         int km=position ? ftx_km(row_grids[front][i]) : -1;
         if(km>=0) number(km,362,y+2); else text("--",362,y+2,12,15);
 #endif
@@ -666,7 +659,7 @@ void view_draw(unsigned slot,unsigned phase)
         if(r->flag && ft_worked(r->text+r->flag-1)==1){
             unsigned n=strcspn(r->text+r->flag-1," ");
             unsigned start=r->flag-1;
-            if(start+n>28)n=start<28?28-start:0;
+            if(start+n>20)n=start<20?20-start:0;
             if(n)rectangle(progress,35+8*start,y+9,8*n,1);
         }
 #endif
