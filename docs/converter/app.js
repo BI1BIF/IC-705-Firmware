@@ -52,7 +52,13 @@ function render() {
   el("history").replaceChildren(...notes.history.map((row, index) => {
     const entry = document.createElement("article");
     entry.className = "entry";
-    entry.append(node("h3", row.version + (index ? "" : lang === "en" ? " · Latest" : " · 最新版")), node("p", row[lang]));
+    const title = node("h3", row.version + (index ? "" : lang === "en" ? " · Latest" : " · 最新版"));
+    if (row.date) {
+      const date = node("time", row.date);
+      date.dateTime = row.date;
+      title.prepend(date, " · ");
+    }
+    entry.append(title, node("p", row[lang]));
     return entry;
   }));
 }

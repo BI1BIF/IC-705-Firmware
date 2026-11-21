@@ -1,5 +1,6 @@
 """Publish a browser patch for a verified same-size IC-705 1.40 build."""
 import argparse
+from datetime import date
 import gzip
 import hashlib
 import json
@@ -30,6 +31,14 @@ def main():
     notes = json.loads((root / "release-notes.json").read_text(encoding="utf-8-sig"))
     if not notes["history"] or args.version not in [row["version"] for row in notes["history"]]:
         parser.error("Add the new version to release-notes.json before publishing")
+    for row in notes["history"]:
+        day = row.get("date")
+        try:
+            canonical = date.fromisoformat(day).isoformat()
+        except (ValueError, TypeError):
+            canonical = ""
+        if not canonical or canonical != day:
+            parser.error(f"Supply a valid YYYY-MM-DD release date for {row['version']}")
     for lang in ("zh", "en"):
         if not notes["features"].get(lang) or not all(row.get(lang) for row in notes["history"]):
             parser.error("Supply current features and release notes in both languages")

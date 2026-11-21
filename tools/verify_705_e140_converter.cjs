@@ -30,6 +30,13 @@ async function main() {
     await page.goto(url);
     const input = page.locator("#source");
     await page.waitForFunction(() => !document.querySelector("#source").disabled);
+    const history = JSON.parse(fs.readFileSync(path.join(site, "converter", "release-notes.json"), "utf8")).history;
+    for (const language of ["en", "zh"]) {
+      await page.locator("#" + language).click();
+      const dates = await page.locator("#history h3 time").evaluateAll(nodes =>
+        nodes.map(node => [node.dateTime, node.textContent]));
+      assert.deepEqual(dates, history.map(row => [row.date, row.date]));
+    }
     const stock = fs.readFileSync(path.join(root,"firmware","705E140.dat"));
     const damaged = Buffer.from(stock);
     damaged[400] ^= 1;

@@ -37,6 +37,13 @@ The European and US releases use the same original `705E140.dat`. The E140 patch
 
 First public release of on-radio FT8 (15 s) and FT4 (7.5 s) RX/TX. Select GPS or the internal clock, browse and filter decodes, and reply manually or use automatic caller selection and sequencing. Both modes share an ADIF log. TX2j aligns the header and reduces repeated text drawing.
 
+| 日期 / Date | 版本 / Version | 更新内容 / Changes |
+| --- | --- | --- |
+| 2026-11-19 | SSTV RX4-TX4 | SSTV 发射扩展到 23 种模式。 / Expanded SSTV transmission to 23 modes. |
+| 2026-11-19 | SSTV RX4-TX3 | 改善 Robot 36 弱信号续画，减少发射忙误报，并将 SEND 移到下方。 / Improved Robot 36 reception during fades, reduced false TX busy indications and moved SEND to the lower button. |
+| 2026-11-19 | SSTV RX4-TX2 | 新增触屏一键发图。 / Added one-tap picture transmission. |
+| 2026-11-19 | SSTV RX4-TX1 | 接入原厂选图，支持发送 Robot 36 和 Martin M1。 / Added the native picture picker and transmission in Robot 36 and Martin M1. |
+
 [操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [模拟操作 GIF · Simulator walkthrough](docs/images/ftx-tx2j.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
 
 ## 微信交流群 · WeChat test group
