@@ -28,6 +28,31 @@ def digest(data):
     return sha256(data).hexdigest()
 
 
+def offline_test_page(path, stock, dat, region, title, note=""):
+    delta = gzip.compress(bytes(x ^ y for x,y in zip(stock,dat,strict=True)),mtime=0)
+    html = (ROOT/"tools/fixtures/e140-log-test.html").read_text(encoding="utf8")
+    fields = {"TITLE":title,"REGION":"日版" if region=="J" else "欧／美版",
+              "FILENAME":f"705{region}140.dat","NOTE":note,
+              "STOCK_SHA":digest(stock),"OUTPUT_SHA":digest(dat),
+              "PATCH_BASE64":base64.b64encode(delta).decode("ascii")}
+    for key,value in fields.items():
+        html = html.replace("{{"+key+"}}",value)
+    path.write_text(html, encoding="utf8")
+
+
+def repack_main(dat, flash, main, match_depth):
+    updated = with_pc_main(flash, bytes(main), match_depth=match_depth)
+    _, group = checked_group_a(bytes(dat))
+    start, stop = group["offset"], group["end_exclusive"]
+    end = BOOT_SIZE + 9 + unpack_from("<I",updated,BOOT_SIZE)[0]
+    assert updated[end:] == flash[end:]
+    for i in range(BOOT_SIZE,end):
+        dat[start+i] = updated[i] ^ ((updated[i-1]+start+i-0x19) & 255)
+    dat[stop:stop+16] = md5(dat[start:stop], usedforsecurity=False).digest()
+    reread, resources = load_a(bytes(dat), digest(main))
+    assert reread == main and resources == updated
+
+
 def build(region):
     out = OUT if region == "E" else ROOT / ".analysis/j140-ft-sd"
     out.mkdir(parents=True, exist_ok=True)
@@ -64,26 +89,13 @@ def build(region):
             main[at-BASE:at-BASE+size] = code[offset:offset+size]
             applied.add(symbol.name)
     assert "edit_prefs" in applied
-    updated = with_pc_main(flash, bytes(main), match_depth=20 if region == "E" else 2)
-    _, group = checked_group_a(bytes(dat))
-    start, stop = group["offset"], group["end_exclusive"]
-    end = BOOT_SIZE + 9 + unpack_from("<I",updated,BOOT_SIZE)[0]
-    assert updated[end:] == flash[end:]
-    for i in range(BOOT_SIZE,end):
-        dat[start+i] = updated[i] ^ ((updated[i-1]+start+i-0x19) & 255)
-    dat[stop:stop+16] = md5(dat[start:stop], usedforsecurity=False).digest()
-    reread, resources = load_a(bytes(dat), digest(main))
-    assert reread == main and resources == updated
+    repack_main(dat, flash, main, 20 if region == "E" else 2)
     (out/filename).write_bytes(dat)
     print(digest(dat), digest(main))
     if region == "J":
         return
-    patch = gzip.compress(bytes(x ^ y for x,y in zip(stock,dat,strict=True)),mtime=0)
-    html = (ROOT/"tools/fixtures/e140-log-test.html").read_text(encoding="utf8")
-    for key,value in {"STOCK_SHA":digest(stock),"OUTPUT_SHA":digest(dat),
-                      "PATCH_BASE64":base64.b64encode(patch).decode("ascii")}.items():
-        html = html.replace("{{"+key+"}}",value)
-    (OUT/"E140-log-test.html").write_text(html, encoding="utf8")
+    offline_test_page(OUT/"E140-log-test.html", stock, dat, region, "欧版 FT 通联日志测试",
+                      "当前仍在「待存卡」的通联请先手工记下，重启会清除待存记录。")
 
 
 if __name__ == "__main__":

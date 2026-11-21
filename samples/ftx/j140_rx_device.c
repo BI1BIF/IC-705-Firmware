@@ -297,7 +297,7 @@ unsigned ftx_touch(void) {
     if(s==OFF || s==STOPPING) return 0;
     /* Route a gesture by the OEM layer actually composited over the FT keys. */
     if(y<FT_PANEL_TOP || (BYTE(0x204bd028) && x>=361) ||
-       (BYTE(0x204bd19e) && BYTE(0x204bd19f)==2 && x<118 && y>=157) ||
+       (x<118 && y<272 && y>=ft_af_top()) ||
        (BYTE(0x204bd0bc) && BYTE(0x204bd0bd)==1 && x>=130 && x<350 && y>=153 && y<239) ||
        BYTE(0x204bd0f4) || other_panel_open()) {
         held=2;

@@ -397,8 +397,9 @@ static void finish(struct Paint *p,int x,int y,int w,int h)
         if(y==FT_PANEL_TOP) {
             /* The CW panel uses the same committed MULTI, AF and TWIN layers. */
             int right=*(volatile uint8_t *)0x204bd028?361:480;
-            int left=*(volatile uint8_t *)0x204bd19e && *(volatile uint8_t *)0x204bd19f==2?118:0;
-            if(left) copy_rect(target,0,FT_PANEL_TOP,left,157);
+            unsigned af_top=ft_af_top();
+            int left=af_top<272?118:0;
+            if(left) copy_rect(target,0,FT_PANEL_TOP,left,af_top);
             if(*(volatile uint8_t *)0x204bd0bc && *(volatile uint8_t *)0x204bd0bd==1) {
                 copy_rect(target,left,FT_PANEL_TOP,right,153);
                 copy_rect(target,left,153,130,239);

@@ -3,6 +3,17 @@
 #include "device_memory.h"
 /* The compact scope frame starts two scanlines above the FT controls. */
 enum { FT_PANEL_TOP = 84 };
+/* Top edge of the AF panel actually committed by the HOME compositor. */
+static inline unsigned ft_af_top(void) {
+    unsigned af = *(const volatile unsigned short *)0x204bd19e;
+    if (af & 0xff) {
+        unsigned kind = af >> 8;
+        if (kind == 2) return 157; /* AF/RF/SQL press */
+        if (kind == 1 && !*(const volatile unsigned char *)0x204bd68d)
+            return 214; /* momentary level display on rotation */
+    }
+    return 272;
+}
 enum { FT_LIST, FT_QSO, FT_SETUP, FT_CALL, FT_GRID, FT_MENU, FT_AUTO, FT_TIME, FT_LOG, FT_INFO };
 extern unsigned ft_page, ftx_ft4;
 int ft_data_ready(void);
