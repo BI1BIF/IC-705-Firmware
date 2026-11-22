@@ -6,6 +6,12 @@ BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.4.0** i
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
+## 补丁使用与分发 · Patch use and distribution
+
+本项目的 IC-705 补丁在项目页面免费提供。欢迎大家交流使用，也请尊重本项目和上游作者的署名。未经授权，请勿复制本项目的原创代码、补丁或文档用于销售、付费下载或捆绑销售。改名、换包装，或将这些内容并入其他版本后出售，同样需要取得授权。项目使用的第三方代码、字体、图标和数据，按各自原许可使用。
+
+This project’s IC-705 patches are available free of charge on the project website. We welcome their use and discussion. Please credit this project and its upstream authors. You need permission to copy this project’s original code, patches or documentation for sale, paid downloads or sale as part of a bundle. This also applies if you rename or repackage the material, or include it in another version you sell. Third-party code, fonts, icons and data are subject to their respective licenses.
+
 ## 电台功能 · Radio features
 
 | 功能 / Feature | 中文 | English |
