@@ -2,12 +2,13 @@
 
 import argparse
 from collections import Counter
+from functools import lru_cache
 from hashlib import sha256
 import json
 from pathlib import Path
 
 from tools.decode_705_main import BOOT_SIZE, J140_DAT_SHA, J140_MAIN_SHA, checked_group_a, decode_a_range, decode_main
-from tools.emulate_705 import BOOT, SCRATCH, arm, call, machine, uc
+from tools.emulate_705 import BASE, BOOT, SCRATCH, arm, call, machine, uc
 from tools.probe_705_boot_selection import MARKER, NOR_BYTES, SECOND
 from tools.probe_705_stock_update import (BUILDS, DECODE_STATE, DIGEST_CHECK, HEADER_CHECK, STOCK_PATH, WRITE_STAGE,
                                           bind_stock_file, require)
@@ -30,6 +31,20 @@ def load_a(package, expected_main):
     data = bytes(boot)+bytes(decode_a_range(package, start, group["end_exclusive"]-start, boot[-1]))
     require(len(data) == 0x9C0000 and sha256(main).hexdigest() == expected_main, "unexpected stock source")
     return bytes(main), data
+
+
+def european_update_rom(japan, europe):
+    @lru_cache(maxsize=None)
+    def rom(pc):
+        at = (pc & ~1)-BASE
+        reference = japan[at-56:at+72]
+        scores = sorted((sum(a == b for a, b in zip(reference, europe[at-56+d:at+72+d])), d)
+                        for d in (-244, -240, -152, 0, 192, 224, 228))
+        score, delta = scores[-1]
+        require(score >= 74 and score > scores[-2][0], f"ambiguous E140 service {pc:#x}: {scores}")
+        return pc+delta
+
+    return rom
 
 
 def observed_preflight(cpu, package, prior, reads, pending, opened, *, mismatch=None, rom=lambda pc: pc):

@@ -1,10 +1,10 @@
 {
-  "version": "v1.3.2",
+  "version": "v1.4.0",
   "size": 12259086,
   "stock": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
-  "target": "eb7d2d1bb969241e17dbc7effb387cf4c9d73ab2e58c7267c4c461014febff65",
-  "patch": "d00eb569cb4e621ffa4c4377cef38776c0cd57410378f4b2a44284364e92760e.xor.gz",
-  "patchHash": "d00eb569cb4e621ffa4c4377cef38776c0cd57410378f4b2a44284364e92760e",
+  "target": "d17a9bb40555b8faebd9dc22cad6412eed45495f64973099d4b82dd5946fbaa6",
+  "patch": "40d062a86f12f0a87c0114b15b9eca7b94c4dff8a9f183a84dab5e1990c22130.xor.gz",
+  "patchHash": "40d062a86f12f0a87c0114b15b9eca7b94c4dff8a9f183a84dab5e1990c22130",
   "notes": {
     "features": {
       "zh": [
@@ -12,17 +12,29 @@
         "SSTV 接收：自动识别 23 种模式，可保存和回看图片。",
         "SSTV 发射：从 SD 卡选图，选择 23 种模式之一，点 SEND 发射。",
         "FT8／FT4 接收：从 MODE → FT8/4 进入，查看十行报文、A/B 时隙、信噪比、音频频率、国家或地区及可用的网格距离。支持 GPS 或机内时钟授时。",
-        "FT8／FT4 通联：主动呼叫 CQ、点选电台应答，或启用自动选台与自动通联。完成的通联追加到 SD 卡 IC-705/FTLOG.ADI。"
+        "FT8／FT4 通联：主动呼叫 CQ、点选电台应答，或启用自动选台与自动通联。完成的通联追加到 SD 卡 IC-705/FTLOG.ADI。",
+        "APRS：普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。"
       ],
       "en": [
         "CW decoding: read decoded text, speed and waveform on the radio.",
         "SSTV reception: automatically recognize 23 modes, save pictures and browse earlier images.",
         "SSTV transmission: select a photo from the SD card, choose one of 23 modes and tap SEND.",
         "FT8/FT4 reception: open MODE → FT8/4 for ten rows of decodes with slot, SNR, audio frequency, country or region, and distance when a grid is available. Select GPS or the internal clock.",
-        "FT8/FT4 contacts: call CQ, tap a station to reply, or enable automatic caller selection and sequencing. Completed contacts are appended to IC-705/FTLOG.ADI on the SD card."
+        "FT8/FT4 contacts: call CQ, tap a station to reply, or enable automatic caller selection and sequencing. Completed contacts are appended to IC-705/FTLOG.ADI on the SD card.",
+        "APRS: in FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS."
       ]
     },
     "history": [
+      {
+        "version": "v1.4.0",
+        "date": "2026-11-22",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "首次公开机内 1200 波特 FM APRS，支持接收提醒、台站列表、双向短消息、固定周期与 SmartBeaconing 信标。普通单工 FM 的自动信标可在信道空闲时临时切到绑定频点发射，再返回原频点。FT8／FT4 工作期间暂停 APRS。FT 收听页更新了原厂音量窗、归属地与时隙栏，以及灰色 CQ／应答键。SSTV 修复长文件名 JPEG 重发，半屏发射显示扫描线。两区均通过模拟更新和双槽冷启动。移动信标、射频回频及 FT 期间的射频互斥仍待真机确认。",
+        "en": "First public release of on-radio 1200-baud FM APRS, with receive alerts, a station list, two-way messages, fixed-interval beacons and SmartBeaconing. In idle simplex FM, automatic beacons can temporarily tune to the configured channel and return after transmission. APRS pauses during FT8/FT4 operation. The FT receive screen updates the native volume popup, station locations, slot indicator and gray CQ/reply buttons. SSTV can resend JPEGs with long filenames and shows a scan line during half-screen transmission. Both regions passed simulated updates and cold boots from both slots. Mobile beacons, on-air retuning and APRS radio silence during FT operation await hardware confirmation."
+      },
       {
         "version": "v1.3.2",
         "date": "2026-11-21",

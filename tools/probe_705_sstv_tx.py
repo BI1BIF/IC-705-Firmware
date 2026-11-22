@@ -33,9 +33,11 @@ def rgb565(raw):
     return np.stack(((p>>11)*255//31,((p>>5)&63)*255//63,(p&31)*255//31),axis=-1)
 
 
-def mount_card(cpu, directory, rom=lambda pc: pc):
+def mount_card(cpu, directory, rom=lambda pc: pc, *, aliases=None):
     """Supply read-only file operations. The guest constructs paths and decodes JPEGs."""
     paths={f"C:\\IC-705\\Picture\\{p.name}":p for p in directory.glob("*.jpg")}
+    for alias, path in (aliases or {}).items():
+        paths[f"C:\\IC-705\\Picture\\{alias}"] = path
     opened=[]
     handles={}
     def service(cpu,pc,*_):
@@ -71,7 +73,9 @@ def directory_ready(cpu, files, rom=lambda pc: pc):
     # Publish the native directory worker's first cache page, then run its UI notification.
     require(0<len(files)<=4,"fixture must fit one catalog page")
     for i,path in enumerate(files):
-        record=path.name.encode("ascii").ljust(32,b"\0")+pack("<I",path.stat().st_size)
+        name=path.name.encode("ascii")
+        require(len(name)<=28,"picker record only has 28 filename bytes")
+        record=name.ljust(28,b"\0")+pack("<B3xI",len(name),path.stat().st_size)
         cpu.mem_write(0x2039fa90+36*i,record)
     cpu.mem_write(0x20380820,pack("<I",len(files)))
     cpu.mem_write(0x203807f0,b"\0")

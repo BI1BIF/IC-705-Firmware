@@ -1,4 +1,4 @@
-// Run against the dual-region converter using the project's Playwright installation.
+// Usage: node tools/verify_705_e140_converter.cjs <verified DAT directory> [page URL]
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
@@ -8,7 +8,8 @@ const { chromium } = require("playwright-core");
 
 async function main() {
   const root = path.resolve(__dirname, "..");
-  const trial = path.join(root, ".analysis", "sstv-refresh-tx2j1");
+  assert(process.argv[2], "Supply the directory containing both verified DAT files");
+  const trial = path.resolve(process.argv[2]);
   const site = path.join(root, "docs");
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
@@ -26,12 +27,13 @@ async function main() {
   try {
     browser = await chromium.launch({channel:"chrome", headless:true});
     const page = await browser.newPage({acceptDownloads:true});
-    const url = process.argv[2] || "http://127.0.0.1:" + server.address().port;
+    const url = process.argv[3] || "http://127.0.0.1:" + server.address().port;
     await page.goto(url);
     const input = page.locator("#source");
     await page.waitForFunction(() => !document.querySelector("#source").disabled);
-    const history = JSON.parse(fs.readFileSync(path.join(site, "converter", "release-notes.json"), "utf8")).history;
-    assert.equal(await page.locator("#version").innerText(), "v1.3.2");
+    const manifest = name => JSON.parse(fs.readFileSync(path.join(site, "converter", name), "utf8"));
+    const {history, features} = manifest("release-notes.json");
+    assert.equal(await page.locator("#version").innerText(), history[0].version);
     for (const language of ["en", "zh"]) {
       await page.locator("#" + language).click();
       const dates = await page.locator("#history h3 time").evaluateAll(nodes =>
@@ -40,6 +42,8 @@ async function main() {
       const headings = await page.locator("#history h3").allTextContents();
       assert.deepEqual(headings, history.map((row, i) => [row.date, row.version, row.regions.join(" / "),
         ...(i ? [] : [language === "en" ? "Latest" : "最新版"])].join(" · ")));
+      assert.deepEqual(await page.locator("#features li").allTextContents(), features[language]);
+      assert((await page.locator("#history article").first().innerText()).includes(history[0][language]));
     }
     const stock = fs.readFileSync(path.join(root,"firmware","705E140.dat"));
     const damaged = Buffer.from(stock);
@@ -57,8 +61,9 @@ async function main() {
     await set("705E140.dat",japanese);
     const [japanOutput] = await Promise.all([page.waitForEvent("download"),page.locator("#build").click()]);
     assert.equal(japanOutput.suggestedFilename(),"705J140.dat");
-    assert(fs.readFileSync(await japanOutput.path()).equals(fs.readFileSync(path.join(trial,"705J140.dat"))));
-    assert.equal(await page.locator("#version").innerText(), "v1.3.2 · J140");
+    const downloadedJ = fs.readFileSync(await japanOutput.path());
+    assert(downloadedJ.equals(fs.readFileSync(path.join(trial,"705J140.dat"))));
+    assert.equal(await page.locator("#version").innerText(), `${manifest("latest.json").version} · J140`);
     assert.equal(await page.locator("#output-path").innerText(),"IC-705/705J140.dat");
 
     await rejected("705E140.dat",damaged);
@@ -68,19 +73,15 @@ async function main() {
     await page.locator("#en").click();
     assert.equal(await page.locator("#save").getAttribute("download"),"705E140.dat");
     assert.equal(await page.locator("#output-path").innerText(),"IC-705/705E140.dat");
-    assert.equal(await page.locator("#version").innerText(), "v1.3.2 · E140");
-    assert.match(await page.locator("#history article").first().innerText(),/hidden audio peak meter/);
+    assert.equal(await page.locator("#version").innerText(), `${manifest("e140.json").version} · E140`);
     await page.locator("#zh").click();
 
-    const dir = path.join(trial,"browser");
-    fs.mkdirSync(dir,{recursive:true});
-    const file = path.join(dir,download.suggestedFilename());
-    await download.saveAs(file);
-    const downloaded = fs.readFileSync(file);
+    const downloaded = fs.readFileSync(await download.path());
     assert(downloaded.equals(fs.readFileSync(path.join(trial,"705E140.dat"))));
     await rejected("705E140.dat",damaged);
     assert.equal(await page.locator("#save").getAttribute("href"),null);
-    console.log("J140 and E140 browser downloads verified",url,crypto.createHash("sha256").update(downloaded).digest("hex"));
+    const digest = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
+    console.log(JSON.stringify({url,version:history[0].version,J140:digest(downloadedJ),E140:digest(downloaded)}));
   } finally {
     if (browser) await browser.close();
     server.close();

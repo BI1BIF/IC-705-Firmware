@@ -1,6 +1,5 @@
 """Build E140 from the official inputs and replay installation, FT and SSTV."""
 import argparse
-from functools import lru_cache
 from hashlib import md5, sha256
 import json
 from struct import unpack_from
@@ -38,21 +37,11 @@ class EuropeanReplay:
 
     def __init__(self, stock, flash, main_hash):
         from tools.decode_705_main import J140_MAIN_SHA
+        from tools.replay_705_stock_install import european_update_rom
         self.stock, self.flash, self.main_hash = stock, flash, main_hash
-        self.japan, _ = load_a((ROOT/"firmware/705J140.dat").read_bytes(), J140_MAIN_SHA)
+        japan, _ = load_a((ROOT/"firmware/705J140.dat").read_bytes(), J140_MAIN_SHA)
+        self.rom = european_update_rom(japan, stock)
         self.defaults = unpack_from("<I", stock, 0x30c)[0]
-
-    @lru_cache(maxsize=None)
-    def rom(self, pc):
-        # Match the surrounding stock instructions each time the fixture needs
-        # a J140 service. Candidate addresses are used by the host only.
-        at = (pc & ~1)-BASE
-        reference = self.japan[at-56:at+72]
-        scores = sorted((sum(a == b for a,b in zip(reference, self.stock[at-56+d:at+72+d])), d)
-                        for d in (-244, -240, -152, 0, 192, 224, 228))
-        score, delta = scores[-1]
-        assert score >= 74 and score > scores[-2][0], (hex(pc), scores)
-        return pc+delta
 
     def station_guest(self, dat):
         image, flash = load_a(dat, self.main_hash)

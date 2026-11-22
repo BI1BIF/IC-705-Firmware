@@ -37,9 +37,10 @@ from tools.verify_705_ftx_rx import (
 )
 
 
-def mount_station_card(cpu, sy, rom=lambda pc: pc):
+def mount_station_card(cpu, sy, rom=lambda pc: pc, *, extra_paths=()):
     files, opened, pending, faults = {}, {}, [], {}
     paths = {r"C:\IC-705\FTX0.CFG", r"C:\IC-705\FTX1.CFG", r"C:\IC-705\FTLOG.ADI"}
+    paths.update(extra_paths)
     def operation(c, address, *_):
         a,b,n,d = (c.reg_read(reg) for reg in (
             arm.UC_ARM_REG_R0,arm.UC_ARM_REG_R1,arm.UC_ARM_REG_R2,arm.UC_ARM_REG_R3))

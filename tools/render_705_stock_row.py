@@ -114,6 +114,7 @@ class TextSurface:
             0x20263B40: self.get_pixels,
             0x20263AC4: self.draw_image, 0x2026399C: self.destroy_image,
             0x20263B12: self.write_pixels,
+            0x20263B6E: self.copy_pixels,
             0x2026362E: self.clear,
             0x202D1748: self.diagnostic,
         }
@@ -323,6 +324,25 @@ class TextSurface:
                 r, g, b = value >> 11, (value >> 5) & 63, value & 31
                 self.pixels[pos:pos+4] = bytes(((r*255+15)//31, (g*255+31)//63, (b*255+15)//31, 255))
                 pos += 4
+
+    def copy_pixels(self):
+        dx, dy, sx, sy, width, height = unpack("<6i", pack("<6I", *self.args(6)))
+        start = max(0, -dx, -sx)
+        end = min(width, self.width - dx, self.width - sx)
+        if start >= end:
+            return
+        first = max(0, -dy, -sy)
+        last = min(height, self.height - dy, self.height - sy)
+        size = (end - start) * 4
+        rows = []
+        for y in range(first, last):
+            p = 4 * ((self.height-1-sy-y)*self.width + sx+start)
+            rows.append(bytes(self.pixels[p:p+size]))
+        if rows:
+            self.note_draw()
+        for y, row in enumerate(rows, first):
+            p = 4 * ((self.height-1-dy-y)*self.width + dx+start)
+            self.pixels[p:p+size] = row
 
     def translate(self):
         sx, sy, tx, ty = self.matrix()

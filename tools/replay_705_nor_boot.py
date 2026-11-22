@@ -13,7 +13,7 @@ from tools.render_705_stock_row import require
 DSFR, POWER_KEY, POWER_LATCH = 0xFCFF1808, 0xFCFE3220, 0xFCFE3028
 
 
-def with_pc_main(flash, main, *, deeper=False, match_depth=None):
+def with_pc_main(flash, main, *, deeper=False, match_depth=None, lazy=False):
     """Build the PC-only compressed slot in memory, preserving the other NOR data."""
     stream = bytearray()
     last, pos = {}, 0
@@ -41,6 +41,10 @@ def with_pc_main(flash, main, *, deeper=False, match_depth=None):
                         end += 1
                     if end > length:
                         prior, length = other, end
+            if lazy and 3 <= length <= 16 and pos+length+3 <= len(main):
+                following=main[pos+1:pos+length+3]
+                if main.rfind(following,max(pos-4095,0),pos+1)>=0:
+                    length=0
             if length:
                 index = (prior+0xFEE) & 0xFFF
                 stream.extend((index & 0xFF, (index >> 4 & 0xF0) | (length-3)))

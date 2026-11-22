@@ -87,7 +87,7 @@ def pressured_ft8(c, run, irq, sub, value, sy, worker):
     }
 
 
-def scheduler(stock, image, sy):
+def scheduler(stock, image, sy, *, exhaust_stack_pool=True):
     def exercise(c, run, irq, sub, value):
         # Enter from the running main task, then let the original scheduler
         # deliver the pending signal, allocate memory, and retire the worker.
@@ -147,7 +147,7 @@ def scheduler(stock, image, sy):
             c.mem_write(sy["ftx_choice"], pack("<I", ft4))
             cw_state = value(sy["cw_state_anchor"])
             cw_task = value(cw_state + 0x700) if cw_state else 0
-            if i == 1:
+            if i == 1 and exhaust_stack_pool:
                 assert cw_task
                 while sub(0x202D4B17, 0x2049A5C0, 4096):
                     held += 1

@@ -79,9 +79,9 @@ class SettingsGuest:
         cpu.hook_add(uc.UC_HOOK_CODE, handoff, begin=rom(UI_HANDOFF), end=rom(UI_HANDOFF))
         watched = (OPEN_MENU, DISPATCH, SELECT_ROW, BACK, 0x2008B668, 0x2008B670,
                    0x200F0954, 0x200F022C, 0x200A2EE4, 0x200AD034, 0x201549B4,
-                   TOUCH_RECT, TOUCH_ACTION, 0x2007D574, 0x2008B734)
+                   TOUCH_RECT, TOUCH_ACTION, 0x2007D574, 0x2008B734, DRAW)
         if front_panel:
-            watched += (KEY_SCAN, KEY_EVENT, 0x200872E8, 0x20087340, FRAME_DRAW, HOME_DRAW, GRID_DRAW, BRIGHTNESS_DRAW)
+            watched += (KEY_SCAN, KEY_EVENT, 0x200872E8, 0x20087340, FRAME_DRAW, HOME_DRAW, GRID_DRAW, 0x20136260, BRIGHTNESS_DRAW)
             attach_front_surface(cpu, surface, graphics_shift=shift)
         for address in watched:
             cpu.hook_add(uc.UC_HOOK_CODE, visited, begin=rom(address), end=rom(address))
@@ -99,16 +99,16 @@ class SettingsGuest:
     def language(self):
         return list(self.cpu.mem_read(self.language_address, 2))
 
-    def click(self, x, y):
+    def click(self, x, y, *, instruction_limit=100_000):
         surface, cpu = self.surface, self.cpu
         require(0 <= x < surface.width and 0 <= y < surface.height, "touch is outside the guest LCD")
         # shortcut: feed one down and two release polls at the input sample buffer; no digitizer model.
         cpu.mem_write(TOUCH_SAMPLE, pack(">BHH", 0, x, y))
-        call(cpu, self.rom(TOUCH_POLL))
+        call(cpu, self.rom(TOUCH_POLL),instruction_limit=instruction_limit)
         hit_id, = unpack("<H", cpu.mem_read(TOUCH_STATE+2, 2))
         cpu.mem_write(TOUCH_SAMPLE, pack(">BHH", 1, 0, 0))
-        call(cpu, self.rom(TOUCH_POLL))
-        call(cpu, self.rom(TOUCH_POLL))
+        call(cpu, self.rom(TOUCH_POLL),instruction_limit=instruction_limit)
+        call(cpu, self.rom(TOUCH_POLL),instruction_limit=instruction_limit)
         return hit_id
 
     def press_menu(self):
@@ -135,7 +135,8 @@ class SettingsGuest:
         call(cpu, self.rom(UPDATE), instruction_limit=2_000_000)
         mode = cpu.mem_read(PAGE+1, 1)[0]
         if self.front_panel:
-            target = {1: HOME_DRAW, 2: GRID_DRAW, 12: 0x201549B4, 13: 0x201549B4, 15: BRIGHTNESS_DRAW}.get(mode)
+            target = {1: HOME_DRAW, 2: GRID_DRAW, 3: 0x20136260, 12: 0x201549B4, 13: 0x201549B4,
+                      15: BRIGHTNESS_DRAW, 26: DRAW}.get(mode)
             require(target is not None, f"unmodeled panel UI mode {mode}")
             call(cpu, self.rom(FRAME_DRAW), instruction_limit=12_000_000, timeout_us=10_000_000)
             surface.select_target()

@@ -310,7 +310,7 @@ def replay_resource_task(main, large, small, *, fixture_return, loader=None, adc
                          cw_rx_audio=None, cw_rx_record_gate=None, cw_rx_closed_sql=False, cw_canvas_audit=None,
                          cw_stock_state=False, stock_mmu=False,
                          cw_heap_offset=0, cw_image=None, startup_from_nor=False, nor_snapshot=None,
-                         nor_missing_secondary=False):
+                         nor_missing_secondary=False, home_observer=None):
     """Run the caller and use the guest's real SVC vector; bracket the unmodeled board routine."""
     require(not startup_from_nor or (stock_mmu and startup_flash and loader and power_key_released is False and
                                     startup_dma == "format-current" and not cw_extension),
@@ -1286,7 +1286,7 @@ def replay_resource_task(main, large, small, *, fixture_return, loader=None, adc
                                 ("write", 0x2011B344, 0xE6, 2, 511), ("write", 0x2011B348, 0xEE, 2, 65535),
                                 ("write", 0x2011B350, 6, 1, 247), ("read", 0x20367B04, 0xE0, 1, 0),
                                 ("write", 0x20367B10, 0xE0, 1, 8))] and
-                            flash_reads == [["0x2006c2b4", hex(notice), "00000000"]],
+                            flash_reads == [["0x2006c2b4", hex(notice), startup_flash[0x262000:0x262004].hex()]],
                             f"unexpected current-format handoff at {pc():#x}: {pwm_trace}, {flash_reads}")
                     owner_address, request = 0x20381E90, 0x20380C8C
                     startup, = unpack("<I", cpu.mem_read(owner_address, 4))
@@ -2408,6 +2408,8 @@ def replay_resource_task(main, large, small, *, fixture_return, loader=None, adc
                                                     cpu.mem_read(page+1, 1) == b"\x01",
                                                     "warning region changed without the verified HOME frame")
                                             closed = True
+                                            if home_observer is not None:
+                                                home_observer(cpu, home_hash)
                                             if canvas:
                                                 canvas.capture("stock-home-before-cw")
                                             if scene_preview is not None:

@@ -34,20 +34,25 @@ def digest(data):
     return sha256(data).hexdigest()
 
 
-def picker_table(main, table_address, symbols, *, labels=(b"KEYER/DECODE", b"KEYER", b"CW DECODE")):
+def picker_table(main, table_address, symbols, *, labels=(b"KEYER/DECODE", b"KEYER", b"CW DECODE"),
+                 menu_id=PICKER_ID, code_shift=0, table_shift=0):
     """Keep the 277 stock records, then add one native selector and its two rows."""
-    at = PICKER_TABLE-BASE
+    at = PICKER_TABLE + table_shift - BASE
     table = bytearray(main[at:at+PICKER_STRIDE*PICKER_ID])
-    require(all(main[a-BASE:a-BASE+4] == pack("<I", PICKER_TABLE) for a in PICKER_REFERENCES) and
+    require(all(main[a+code_shift-BASE:a+code_shift-BASE+4] == pack("<I", PICKER_TABLE+table_shift)
+                for a in PICKER_REFERENCES) and
             len(table) == PICKER_STRIDE*PICKER_ID and
             table[-28:-24] == b"\x01\x01\x00\x00" and main[at+len(table)+44:at+len(table)+48] != b"\x01\x01\x00\x00",
-            "unexpected J140 stock selector table")
+            "unexpected stock selector table")
 
     def record(i):
         return bytearray(table[i*PICKER_STRIDE:(i+1)*PICKER_STRIDE])
 
     parent, keyer, decode = (record(i) for i in (12, 0x5D, 0x5E))
-    require(parent[:2] == b"\0\x02" and parent[68:] == pack("<I", 0x202E6258), "unexpected selector template")
+    require(parent[:2] == b"\0\x02" and parent[68:] == pack("<I", 0x202E6258+table_shift),
+            "unexpected selector template")
+    require(menu_id >= PICKER_ID, "native menu ID overlaps a stock record")
+    table.extend(bytes((menu_id - PICKER_ID)*PICKER_STRIDE))
     data = bytearray()
     strings = []
     after = table_address + len(table) + 3*PICKER_STRIDE
@@ -57,7 +62,7 @@ def picker_table(main, table_address, symbols, *, labels=(b"KEYER/DECODE", b"KEY
     if len(data) % 2:
         data.append(0)
     rows = after+len(data)
-    data.extend(pack("<HH", PICKER_ID+1, PICKER_ID+2))
+    data.extend(pack("<HH", menu_id+1, menu_id+2))
 
     parent[1] = 1  # Last row index.
     parent[28] |= 1  # These rows are plain labels, with no row-specific input editor.

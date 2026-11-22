@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前补丁为 **v1.3.2**，包含 CW、SSTV 和 FT8/FT4。选择对应电台的原厂 DAT，浏览器会识别版本并在本地生成固件。
+BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.4.0** 包含 CW、SSTV、FT8／FT4 和 APRS。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
 
-BI1BIF’s independent firmware research for the Icom IC-705. The converter supports Japanese (J140) and European/US (E140) Icom 1.40 firmware. The current patch is **v1.3.2** and includes CW, SSTV and FT8/FT4. Select the original DAT for your radio to build its firmware locally in your browser.
+BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.4.0** includes CW, SSTV, FT8/FT4 and APRS for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -14,6 +14,7 @@ BI1BIF’s independent firmware research for the Icom IC-705. The converter supp
 | SSTV RX | 在 PICTURE → SSTV 自动识别模式，使用 SAVE/HIST 保存、回看图片。Robot 36 收到帧头后可在短暂衰落中保留行号。 | Open PICTURE → SSTV for automatic mode detection. SAVE/HIST saves and recalls images. After a valid header, Robot 36 retains the scan position through short fades. |
 | SSTV TX | 从 SD 卡选图并确认，点 MODE 选模式，返回后点 SEND 发射。 | Select and confirm a photo from the SD card, choose a mode under MODE, then return and tap SEND. |
 | FT8 / FT4 | MODE → FT8/4，十行收听、点选应答、主动 CQ、自动通联；日志存入 SD 卡。 | Open MODE → FT8/4 to decode, reply, call CQ and sequence contacts. Completed QSOs are logged to the SD card. |
+| APRS | 普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。 | In FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS. |
 
 **23 种收发模式 / 23 RX and TX modes**
 
@@ -28,6 +29,12 @@ Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed 
 补丁统一使用 **v主版本.功能版本.修订号**。重大升级递增第一位，新增功能递增第二位，修复递增第三位。日版 J140 和欧／美版 E140 的同一次更新共用一个版本号。
 
 Patch releases use **vMAJOR.MINOR.PATCH**. Major upgrades, new features and fixes increment the first, second and third numbers respectively. Regional builds of the same release share a version.
+
+**2026-11-22 · v1.4.0 · J140 / E140**
+
+首次公开机内 1200 波特 FM APRS，支持接收提醒、台站列表、双向短消息、固定周期与 SmartBeaconing 信标。普通单工 FM 的自动信标可在信道空闲时临时切到绑定频点发射，再返回原频点。FT8／FT4 工作期间暂停 APRS。FT 收听页更新了原厂音量窗、归属地与时隙栏，以及灰色 CQ／应答键。SSTV 修复长文件名 JPEG 重发，半屏发射显示扫描线。两区均通过模拟更新和双槽冷启动。移动信标、射频回频及 FT 期间的射频互斥仍待真机确认。
+
+First public release of on-radio 1200-baud FM APRS, with receive alerts, a station list, two-way messages, fixed-interval beacons and SmartBeaconing. In idle simplex FM, automatic beacons can temporarily tune to the configured channel and return after transmission. APRS pauses during FT8/FT4 operation. The FT receive screen updates the native volume popup, station locations, slot indicator and gray CQ/reply buttons. SSTV can resend JPEGs with long filenames and shows a scan line during half-screen transmission. Both regions passed simulated updates and cold boots from both slots. Mobile beacons, on-air retuning and APRS radio silence during FT operation await hardware confirmation.
 
 **2026-11-21 · v1.3.2 · J140 / E140**
 
@@ -89,7 +96,7 @@ The invitation is valid **before November 26, 2026**. After it expires, ask a gr
 | --- | --- |
 | [samples](samples) | 机内 C 和汇编代码 / On-device C and assembly |
 | [tools](tools) · [tests](tests) | 构建、仿真和回放测试 / Build tools, emulation and replay tests |
-| [CW](docs/IC705_CW_RELEASE.md) · [SSTV](docs/IC705_SSTV_PICTURE.md) | 功能说明和各版本实测记录（中文） / Feature guides and version-specific test notes (Chinese) |
+| [CW](docs/IC705_CW_RELEASE.md) · [SSTV](docs/IC705_SSTV_PICTURE.md) · [APRS](docs/IC705_APRS.md) | 功能说明和各版本实测记录（中文） / Feature guides and version-specific test notes (Chinese) |
 | [RESEARCH](RESEARCH.md) · [PROJECT_HANDOFF](docs/PROJECT_HANDOFF.md) | 早期原型、环境准备和项目进度（中文） / Early prototypes, environment setup and project status (Chinese) |
 
 ## 引用与致谢 · Acknowledgements
