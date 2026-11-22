@@ -2,12 +2,20 @@
 
 ## 待发布清单
 
-- **2026-11-21 · FT8/FT4 收听页 · J140 / E140 · 已按机主选定版本备妥，等「IC-705 发布」统一合包。** 公开基线 v1.3.2；依次包含已实机验收的 AF 音量窗 `d8a3b3d`、呼号归属地与时隙栏 `ea64e27`、普通灰色 CQ／应答键 `cc28807`。交付口径为十行、每行 20 字符、QTH 列起点 199 像素；23 字符紧凑布局仍属预览。本次确认用于备发，公开版本号、发布日期和部署等统一发包指令。两区均已通过省级号段和港澳台报文回放、FT8/FT4 表头和首键像素核对、双槽模拟启动及离线页输出比对。AF 音量窗实机反馈通过；新版 QTH 排版和按钮外观已有本地证据，待实机反馈。
-  - [日版测试页及固件](../.analysis/ft-key-style/J/) · [屏幕回放](../.analysis/ft-key-style/J/qth.json) · [启动报告](../.analysis/ft-key-style/J/boot.json) · FT 单项 DAT SHA-256 `5c985561d9217588b07b31571a05bf36638dbdacd51b131e1763e9e4935ab167`。
-  - [欧／美版测试页及固件](../.analysis/ft-key-style/E/) · [屏幕回放](../.analysis/ft-key-style/E/qth.json) · [启动报告](../.analysis/ft-key-style/E/boot.json) · FT 单项 DAT SHA-256 `1c96571f7aa158778e81ffb94ce4bef920b0025c132e2bd557179d44edc3ca17`。
-  - 合包提示：上述哈希用于核对 FT 单项基准。现有[构建脚本](../tools/build_705_ft_qth.py)从特定地区基线重打包；合入其他功能时须保留其程序与资源改动，并以两区最终网页产物重跑 [QTH 与按键](../tools/verify_705_ft_qth.py)及 [AF 音量窗](../tools/verify_705_ft_af_popup.py)回归。
+当前尚无已登记的待发布项。功能会话就绪后在此登记。
 
-- **2026-11-21 · FT 左下角音量窗 · J140 / E140 · 基于公开 v1.3.2 · 本地提交 `d8a3b3d`。** 旧版只避让按下 AF/RF/SQL 后的菜单，会覆盖旋转时原厂的 118×58 AF GAIN 窗。修正版使显示与触摸按原厂窗口边界避让。两区各回放旧、新固件，核对连续两帧、较高的按压菜单、弹窗关闭和被原厂抑制时的 FT 列表恢复。两区双槽模拟启动通过，Chrome 离线转换产物与各自验证 DAT 逐字节一致。下一项实机验收为 FT8 收听时连续旋转 AF、停手恢复报文，并对照按下旋钮的原厂菜单。尚未公开上线。[构建](../tools/build_705_ft_af_popup.py) · [回放](../tools/verify_705_ft_af_popup.py) · [日版证据与测试页](../.analysis/ft-af-popup/J/) · [欧／美版证据与测试页](../.analysis/ft-af-popup/E/)。
+## 发布记录
+
+**2026-11-22 · v1.4.0 · J140／E140 四功能整合版已上线。** 原厂底包 Icom 1.40，公开整合基线 v1.3.2。首次发布 APRS 收发、台站与接收列表、消息、固定周期和 SmartBeaconing，含普通 FM 异频回发及 FT 工作期间暂停 APRS。合入 FT 原厂音量窗、20 字符报文与归属地排版、时隙栏、灰色 CQ／应答键，以及 SSTV 长文件名重发和半屏扫描线，保留 CW 译码。
+
+[发布提交](https://github.com/BI1BIF/IC-705-Firmware/commit/1eaec63622990042ab9255ffda4eb0069649eb08) · [公开转换页](https://bi1bif.github.io/IC-705-Firmware/) · [GitHub Pages 部署](https://github.com/BI1BIF/IC-705-Firmware/actions/runs/44995325111) · [中英文日志](converter/release-notes.json) · [APRS 操作说明](IC705_APRS.md#aprs-简明使用说明)。
+
+- 两区重建均复得候选哈希。模拟原厂 1.40 和公开 v1.3.2 升级及双槽冷启动通过，CW 均解出 `CQ`，SSTV Robot 36 均为 240 行零丢块，长文件名选图与 SEND 快照通过，FT 本台呼号能从模拟 SD 保存及读回。两区的 FT 收听页、APRS 短消息、调度和信标有对应 DAT 的回放报告。
+- 已用 Chrome 从公开转换页分别选入日／欧原厂底包并实际下载。两份 DAT 均与已验收固件逐字节一致，损坏底包均被拒绝，中英文功能列表、日期、版本及地区显示通过。
+- J140 DAT SHA-256 `d17a9bb40555b8faebd9dc22cad6412eed45495f64973099d4b82dd5946fbaa6`。
+- E140 DAT SHA-256 `3863d5372d0649e638d66dd2b372b1b8d3643f849dafbae745ceb45bfe7c17d6`。
+- 本地证据见 [线上浏览器](../.analysis/release-v1.4.0/browser-live.json)、[日版升级](../.analysis/release-v1.4.0/upgrade-from-v1.3.2-J.json)、[欧／美版升级](../.analysis/release-v1.4.0/upgrade-from-v1.3.2-E.json)、[SSTV 重发](../.analysis/release-v1.4.0/sstv-picker-final.json)及 [APRS／FT 的两区原始报告](../.analysis/aprs-hop/smart-final/)。
+- 下一项真机验收为移动信标发报时机、异频发射后返回、FT 工作期间 APRS 射频静默，以及 SSTV 用原卡长文件名选图、发射线显示和中止行为。继续跟进 FT 新版归属地和灰色按键实机反馈。
 
 ## 接续记录
 
