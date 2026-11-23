@@ -2,10 +2,11 @@
 #include "dmr-digital.h"
 #include <string.h>
 struct digital_call digital_call;
+enum { AUDIO_BRANCHES=4 };
 static struct {
-    int16_t history[2][256];
+    int16_t history[AUDIO_BRANCHES][256];
     int32_t integral, previous;
-    uint32_t signs[2][10], clock, best_tick, deadline, next, last_frame;
+    uint32_t signs[AUDIO_BRANCHES][10], clock, best_tick, deadline, next, last_frame;
     unsigned count, duid, nac, phase, pending, protected_call, branch;
     float best, center, gain;
     uint8_t dibits[864];
@@ -260,6 +261,10 @@ static void correlate(unsigned mode,unsigned n,unsigned branch) {
     rx.gain=xy/xx; rx.center=(sy-rx.gain*sx)/n;
 }
 
+static int16_t clip_pcm(int value) {
+    return value>32767 ? 32767 : value< -32768 ? -32768 : value;
+}
+
 void digital_block(unsigned mode,const int16_t pcm[36]) {
     unsigned n=mode==RX_P25 ? 24 : 20, mask=(1u<<n)-1;
     unsigned sync=mode==RX_P25 ? 0x4cf5f : 0x84a52;
@@ -268,16 +273,20 @@ void digital_block(unsigned mode,const int16_t pcm[36]) {
         unsigned index=rx.clock&255, phase=rx.phase;
         int v=pcm[i];
         rx.integral+=v-(rx.integral>>12);
-        int restored=(v+2*(v-rx.previous)+8*(rx.integral>>8))/2;
+        int delta=v-rx.previous;
         rx.previous=v;
         rx.history[0][index]=v;
-        rx.history[1][index]=restored>32767 ? 32767 : restored< -32768 ? -32768 : restored;
+        rx.history[1][index]=clip_pcm((v+2*delta+8*(rx.integral>>8))/2);
+        /* Let the sync word select the compensation for FM receive de-emphasis. */
+        int level=v+(rx.integral>>5);
+        rx.history[2][index]=clip_pcm((level+8*delta)/2);
+        rx.history[3][index]=clip_pcm((level+12*delta)/2);
         rx.phase=rx.phase==9 ? 0 : rx.phase+1;
         if(rx.clock-rx.last_frame>21600 && (digital_call.active || rx.protected_call || digital_call.callsign[0])) {
             digital_call.active=0; rx.protected_call=0; digital_call.callsign[0]=0;
         }
         if(!rx.count) {
-            for(unsigned b=0;b<2;++b) {
+            for(unsigned b=0;b<AUDIO_BRANCHES;++b) {
                 uint32_t *s=&rx.signs[b][phase];
                 *s=(*s<<1)|(rx.history[b][index]<0);
                 unsigned diff=(*s^sync)&mask, inv=diff^mask;

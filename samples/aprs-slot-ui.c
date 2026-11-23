@@ -504,7 +504,7 @@ unsigned aprs_ui_touch(void)
         return 0;
     }
     if (held)
-        return 1;
+        return 0;  /* The native scanner must run after Reply opens the keyboard. */
     unsigned x=(s[1]<<8)|s[2], y=(s[3]<<8)|s[4];
     if (!aprs_popup_owned || U8(0x203807dd)!=13 || x<241 || x>322 || y<222 || y>264 ||
         !aprs_can_reply(&aprs_popup_packet))
@@ -514,7 +514,8 @@ unsigned aprs_ui_touch(void)
     from_history=aprs_history_detail;
     aprs_history_detail=0;
     ((void (*)(unsigned))0x200efe64)(1);
-    ((void (*)(unsigned))0x2007d478)(1);
+    /* Keep the initiating press from becoming a key on the next screen. */
+    ((void (*)(void))0x201085b8)();
     ((void (*)(unsigned))0x200f1600)(349);
     return 1;
 }

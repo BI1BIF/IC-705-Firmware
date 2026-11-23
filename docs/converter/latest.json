@@ -1,10 +1,10 @@
 {
-  "version": "v1.5.0",
+  "version": "v1.5.1",
   "size": 12259086,
   "stock": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
-  "target": "e82a8270768f947ef6c2b37be1bce70dcf8aa533c1b6fabef0b795fc1e7e72c5",
-  "patch": "cd160724b1379a5a27538d34126a2880508eb260ec3cb1622f9c24105287c3cb.xor.gz",
-  "patchHash": "cd160724b1379a5a27538d34126a2880508eb260ec3cb1622f9c24105287c3cb",
+  "target": "cd2fad5650b346577c335e874930ac4b8e426276375f4e037bb47959aba910ca",
+  "patch": "471afdf84dcdfc1690db11dab3e30c45648f9f7199c9029ef6c6f577d835bd41.xor.gz",
+  "patchHash": "471afdf84dcdfc1690db11dab3e30c45648f9f7199c9029ef6c6f577d835bd41",
   "notes": {
     "features": {
       "zh": [
@@ -27,6 +27,16 @@
       ]
     },
     "history": [
+      {
+        "version": "v1.5.1",
+        "date": "2026-11-24",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "数字语音接收：修正部分接收滤波条件下 C4FM 和常规 P25 Phase 1 无来电信息、无语音的问题。升级时请同时换用本版 SD 卡包里的 DMRRX.BIN。DMR、C4FM 和常规 P25 Phase 1 的接收效果待真机测试。\n\nAPRS：修复收到短消息后点 Reply 打开键盘时卡住的问题。回复输入和实体 EXIT 已通过模拟回放，待真机复测。",
+        "en": "Digital voice RX: fixed missing caller information and audio for C4FM and conventional P25 Phase 1 under some receive filter conditions. When upgrading, replace DMRRX.BIN with the file in this release’s SD ZIP. DMR, C4FM and conventional P25 Phase 1 reception await testing on a physical radio.\n\nAPRS: fixed a keyboard freeze after tapping Reply on an incoming message. Reply input and the physical EXIT key passed emulation and await a hardware retest."
+      },
       {
         "version": "v1.5.0",
         "date": "2026-11-23",

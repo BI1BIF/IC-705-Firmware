@@ -23,13 +23,14 @@ def discriminator(path):
     hz=np.angle(iq[1:]*iq[:-1].conj())*48000/(2*np.pi)
     return np.rint(sosfilt(butter(3,3900,fs=48000,output="sos"),hz)).astype("<i2")
 
-def replay(name,mode,pcm):
-    folder=OUT/"core"
+def replay(name,mode,pcm,*,package_dir=None,output_dir=None):
+    package_dir=package_dir or OUT
+    folder=package_dir/"core"
     layout=json.loads((folder/"payload.json").read_text())
     base=layout["link_base"]
     sy=symbols(folder/f"payload-{base:08x}.elf")
-    card=(OUT/"J/DMRRX.BIN").read_bytes()
-    assert card==(OUT/"E/DMRRX.BIN").read_bytes()
+    card=(package_dir/"J/DMRRX.BIN").read_bytes()
+    assert card==(package_dir/"E/DMRRX.BIN").read_bytes()
     c=machine()
     c.mem_write(base,card[:layout["image_bytes"]])
     c.reg_write(arm.UC_ARM_REG_C1_C0_2,0xf00000)
@@ -56,7 +57,7 @@ def replay(name,mode,pcm):
     stack=bytes(c.mem_read(sp-20000,20000))
     used=len(stack)-next(i for i,b in enumerate(stack) if b!=165)
     assert used<12288,(name,used)
-    with wave.open(str(OUT/(name+".wav")),"wb") as f:
+    with wave.open(str((output_dir or package_dir)/(name+".wav")),"wb") as f:
         f.setparams((1,2,8000,0,"NONE","")); f.writeframes(out)
     info=dict(input=name,card_sha256=sha256(card).hexdigest(),samples=len(out)//2,
               pcm_sha256=sha256(out).hexdigest(),rows=sorted(rows),stack_bytes=used)

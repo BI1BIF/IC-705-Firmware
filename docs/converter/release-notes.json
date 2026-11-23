@@ -21,6 +21,16 @@
   },
   "history": [
     {
+      "version": "v1.5.1",
+      "date": "2026-11-24",
+      "regions": [
+        "J140",
+        "E140"
+      ],
+      "zh": "数字语音接收：修正部分接收滤波条件下 C4FM 和常规 P25 Phase 1 无来电信息、无语音的问题。升级时请同时换用本版 SD 卡包里的 DMRRX.BIN。DMR、C4FM 和常规 P25 Phase 1 的接收效果待真机测试。\n\nAPRS：修复收到短消息后点 Reply 打开键盘时卡住的问题。回复输入和实体 EXIT 已通过模拟回放，待真机复测。",
+      "en": "Digital voice RX: fixed missing caller information and audio for C4FM and conventional P25 Phase 1 under some receive filter conditions. When upgrading, replace DMRRX.BIN with the file in this release’s SD ZIP. DMR, C4FM and conventional P25 Phase 1 reception await testing on a physical radio.\n\nAPRS: fixed a keyboard freeze after tapping Reply on an incoming message. Reply input and the physical EXIT key passed emulation and await a hardware retest."
+    },
+    {
       "version": "v1.5.0",
       "date": "2026-11-23",
       "regions": [

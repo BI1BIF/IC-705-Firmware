@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.5.0** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
+BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.5.1** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
 
-BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.5.0** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
+BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.5.1** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -38,6 +38,16 @@ Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed 
 补丁统一使用 **v主版本.功能版本.修订号**。重大升级递增第一位，新增功能递增第二位，修复递增第三位。日版 J140 和欧／美版 E140 的同一次更新共用一个版本号。
 
 Patch releases use **vMAJOR.MINOR.PATCH**. Major upgrades, new features and fixes increment the first, second and third numbers respectively. Regional builds of the same release share a version.
+
+**2026-11-24 · v1.5.1 · J140 / E140**
+
+数字语音接收：修正部分接收滤波条件下 C4FM 和常规 P25 Phase 1 无来电信息、无语音的问题。升级时请同时换用本版 SD 卡包里的 DMRRX.BIN。DMR、C4FM 和常规 P25 Phase 1 的接收效果待真机测试。
+
+APRS：修复收到短消息后点 Reply 打开键盘时卡住的问题。回复输入和实体 EXIT 已通过模拟回放，待真机复测。
+
+Digital voice RX: fixed missing caller information and audio for C4FM and conventional P25 Phase 1 under some receive filter conditions. When upgrading, replace DMRRX.BIN with the file in this release’s SD ZIP. DMR, C4FM and conventional P25 Phase 1 reception await testing on a physical radio.
+
+APRS: fixed a keyboard freeze after tapping Reply on an incoming message. Reply input and the physical EXIT key passed emulation and await a hardware retest.
 
 **2026-11-23 · v1.5.0 · J140 / E140**
 
