@@ -60,7 +60,7 @@ function render() {
       date.dateTime = row.date;
       title.prepend(date, " · ");
     }
-    entry.append(title, node("p", row[lang]));
+    entry.append(title, ...row[lang].split("\n\n").map(paragraph => node("p", paragraph)));
     return entry;
   }));
 }
@@ -71,16 +71,18 @@ for (const code of ["zh","en"]) el(code).onclick = () => {
 };
 render();
 
-const demos = {ftx: "ftx-tx2j", radio: "radio-demo"};
+const demos = {digital: "digital-voice-v150", ftx: "ftx-v2-native", aprs: "aprs-v150", radio: "radio-demo"};
+const demoToggle = el("demo-toggle");
 function showDemo(play) {
   const kind = el("demo-kind").value;
+  demoToggle.dataset.playing = String(play);
+  demoToggle.setAttribute("aria-describedby", kind + "-steps");
   el("demo-play").hidden = play;
   el("demo-stop").hidden = !play;
-  el("ftx-steps").hidden = kind !== "ftx";
-  el("radio-steps").hidden = kind !== "radio";
+  for (const demo of Object.keys(demos)) el(demo + "-steps").hidden = demo !== kind;
   el("demo-screen").src = "images/" + demos[kind] + (play ? ".gif" : "-cover.png");
 }
-el("demo-toggle").onclick = () => showDemo(!el("demo-play").hidden);
+demoToggle.onclick = () => showDemo(demoToggle.dataset.playing !== "true");
 el("demo-kind").onchange = () => showDemo(false);
 showDemo(false);
 

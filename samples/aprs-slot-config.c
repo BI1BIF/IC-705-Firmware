@@ -16,7 +16,7 @@ void *memset(void *dest,int value,__SIZE_TYPE__ n)
 }
 static uint32_t sequence APRS_KEEP, retry_after APRS_KEEP;
 uint8_t aprs_settings_dirty APRS_KEEP;
-static uint32_t checksum(const void *r,unsigned bytes)
+uint32_t aprs_card_checksum(const void *r,unsigned bytes)
 {
     const uint8_t *p=(const uint8_t *)r;
     uint32_t sum=2166136261u;
@@ -39,7 +39,7 @@ static int transfer(void *r,unsigned bytes,unsigned bank,int write,int phrases)
 }
 static int valid(const struct settings_record *r)
 {
-    if (r->magic!=0x31525041 || r->sum!=checksum(r,__builtin_offsetof(struct settings_record,sum)) || r->enabled>1 ||
+    if (r->magic!=0x31525041 || r->sum!=aprs_card_checksum(r,__builtin_offsetof(struct settings_record,sum)) || r->enabled>1 ||
         r->ssid>15 || r->path>2 || r->automatic>1 || r->interval>SMART_INTERVAL ||
         r->answer_on>1 || r->delay>=5 || r->answer[64] || r->caller[9] || r->edited>1 || r->comment[APRS_BEACON_COMMENT_MAX]) return 0;
     for (unsigned i=0;i<ALERT_COUNT;++i)
@@ -63,6 +63,7 @@ static void settings_fields(struct settings_record *r,int restore)
    made while the card was away take priority over that card's old settings. */
 void aprs_config_poll(uint32_t *hz,unsigned *tx,unsigned mount,unsigned changed)
 {
+    aprs_history_card_poll(mount);
     if (!mount && !aprs_settings_dirty && !changed) return;
     struct settings_record record={0}, newest;
     if (changed) aprs_settings_dirty=1;
@@ -90,7 +91,7 @@ void aprs_config_poll(uint32_t *hz,unsigned *tx,unsigned mount,unsigned changed)
     record=(struct settings_record){.magic=0x31525041,.sequence=sequence+1,
                                     .frequency=*hz,.enabled=*tx};
     settings_fields(&record,0);
-    record.sum=checksum(&record,__builtin_offsetof(struct settings_record,sum));
+    record.sum=aprs_card_checksum(&record,__builtin_offsetof(struct settings_record,sum));
     if (transfer(&record,sizeof(record),record.sequence&1,1,0)) {
         sequence=record.sequence;aprs_settings_dirty=0;retry_after=0;
     } else retry_after=now+5000;
@@ -117,7 +118,7 @@ int aprs_phrases_load(void)
     memset(aprs_phrases,0,sizeof(aprs_phrases));
     for (unsigned i=0;i<2;++i) {
         if (!transfer(&phrase_work,sizeof(phrase_work),i,0,1) || phrase_work.magic!=0x31545841 ||
-            phrase_work.sum!=checksum(&phrase_work,__builtin_offsetof(struct phrase_file,sum)) ||
+            phrase_work.sum!=aprs_card_checksum(&phrase_work,__builtin_offsetof(struct phrase_file,sum)) ||
             (found && (int32_t)(phrase_work.sequence-phrase_seq)<=0)) continue;
         unsigned j=0;
         while (j<20 && !phrase_work.text[j][32]) ++j;
@@ -135,7 +136,7 @@ int aprs_phrase_save(unsigned index,const char *text)
     unsigned i=0;
     for (;i<32 && text[i];++i) phrase_work.text[index][i]=text[i];
     phrase_work.text[index][i]=0;
-    phrase_work.sum=checksum(&phrase_work,__builtin_offsetof(struct phrase_file,sum));
+    phrase_work.sum=aprs_card_checksum(&phrase_work,__builtin_offsetof(struct phrase_file,sum));
     if (!transfer(&phrase_work,sizeof(phrase_work),phrase_work.sequence&1,1,1)) return 0;
     __builtin_memcpy(aprs_phrases[index],phrase_work.text[index],33);
     return 1;

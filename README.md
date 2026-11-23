@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.4.0** 包含 CW、SSTV、FT8／FT4 和 APRS。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
+BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.5.0** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
 
-BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.4.0** includes CW, SSTV, FT8/FT4 and APRS for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
+BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.5.0** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -19,8 +19,11 @@ This project’s IC-705 patches are available free of charge on the project webs
 | CW DECODE | 在 CW 模式下查看译文、速度和波形；点 HOLD/CLR 可冻结译文，长按清屏。 | Read decoded Morse text, speed and waveform in CW mode. Tap HOLD/CLR to freeze the text, or hold it to clear. |
 | SSTV RX | 在 PICTURE → SSTV 自动识别模式，使用 SAVE/HIST 保存、回看图片。Robot 36 收到帧头后可在短暂衰落中保留行号。 | Open PICTURE → SSTV for automatic mode detection. SAVE/HIST saves and recalls images. After a valid header, Robot 36 retains the scan position through short fades. |
 | SSTV TX | 从 SD 卡选图并确认，点 MODE 选模式，返回后点 SEND 发射。 | Select and confirm a photo from the SD card, choose a mode under MODE, then return and tap SEND. |
-| FT8 / FT4 | MODE → FT8/4，十行收听、点选应答、主动 CQ、自动通联；日志存入 SD 卡。 | Open MODE → FT8/4 to decode, reply, call CQ and sequence contacts. Completed QSOs are logged to the SD card. |
+| FT8 / FT4 | MODE → FT8/4，十行守听和通联状态同屏，手动、半自动、全自动三档，支持多人来叫时点选；日志存入 SD 卡。 | Open MODE → FT8/4 for on-screen status, manual, semi-auto and full-auto operation, and caller selection. Completed QSOs are logged to the SD card. |
 | APRS | 普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。 | In FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS. |
+| 数字语音接收 / Digital voice RX | 数字语音接收：支持明文 DMR、C4FM 和常规 P25 Phase 1。通过 MODE 的 DV 键循环切换，需在 SD 卡 IC-705 目录保留 DMRRX.BIN。 | Digital voice reception covers clear DMR, C4FM and conventional P25 Phase 1. Cycle through them with the MODE menu’s DV key. Keep DMRRX.BIN in the IC-705 folder on the SD card. |
+
+[安装说明 · Installation guide](https://bi1bif.github.io/IC-705-Firmware/#install) · [数字语音 SD 卡文件 · Digital voice SD files](docs/converter/digital-voice-sd.zip) · [数字语音源码与许可 · Digital voice sources and licenses](docs/converter/digital-voice-source.zip)
 
 **23 种收发模式 / 23 RX and TX modes**
 
@@ -35,6 +38,42 @@ Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed 
 补丁统一使用 **v主版本.功能版本.修订号**。重大升级递增第一位，新增功能递增第二位，修复递增第三位。日版 J140 和欧／美版 E140 的同一次更新共用一个版本号。
 
 Patch releases use **vMAJOR.MINOR.PATCH**. Major upgrades, new features and fixes increment the first, second and third numbers respectively. Regional builds of the same release share a version.
+
+**2026-11-23 · v1.5.0 · J140 / E140**
+
+### 新增功能
+
+- 数字语音支持接收明文 DMR、C4FM 和常规 P25 Phase 1。
+- FT8／FT4 支持指定呼号呼叫。同一时隙有多人应答时，可点选对台。
+- APRS 可保存最近 64 条接收记录，重启后可继续查看。
+- 转换页新增数字语音卡文件下载、安装说明和可点击播放的功能演示。
+
+### 功能调整
+
+- FT8／FT4 通联时仍可看十行报文，每行最多 22 个字符。QTH、dB、Hz 和 km 的表头与内容左对齐。
+- FT8／FT4 可选手动、半自动或全自动。全自动可设发送次数上限，并选择无应答时停止、换台或回到 CQ。
+- APRS 列表在有本机位置时显示收包方位，接收弹窗和详情页统一了表头。
+
+### 问题修复
+
+- 修复 FT8／FT4 使用机内时钟时，通联日志可能把本地时间记作 UTC 的问题。
+
+### Added
+
+- Digital voice reception for clear DMR, C4FM and conventional P25 Phase 1.
+- FT8/FT4 can call a specific callsign and lets you choose a station when several reply in the same slot.
+- APRS can save the last 64 received packets and restore them after a restart.
+- The converter page adds a digital voice SD download, installation instructions and click-to-play demos.
+
+### Changed
+
+- The ten-row FT8/FT4 list stays visible during contacts. Each row fits 22 characters, and the QTH, dB, Hz and km headings line up with their values.
+- FT8/FT4 offers manual, semi-auto and full-auto operation. In full auto, set an attempt limit and choose whether to stop, try another station or call CQ again after no reply.
+- The APRS list shows packet bearings when the radio has a position. Receive popups and detail screens use the same header.
+
+### Fixed
+
+- Corrected the UTC time recorded in FT8/FT4 contact logs when using the radio’s internal clock and a local time-zone offset.
 
 **2026-11-22 · v1.4.0 · J140 / E140**
 
@@ -82,7 +121,7 @@ First public release of on-radio FT8 (15 s) and FT4 (7.5 s) RX/TX. Select GPS or
 
 </details>
 
-[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [模拟操作 GIF · Simulator walkthrough](docs/images/ftx-tx2j.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
+[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [FT8／FT4 操作 GIF](docs/images/ftx-v2-native.gif) · [数字语音 / Digital voice GIF](docs/images/digital-voice-v150.gif) · [APRS 操作 GIF](docs/images/aprs-v150.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
 
 ## 微信交流群 · WeChat test group
 

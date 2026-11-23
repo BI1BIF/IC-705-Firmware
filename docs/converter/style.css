@@ -3,4 +3,29 @@ nav,.switch,.file{display:flex;align-items:center;gap:14px}.switch{position:rela
 
 #save:not([hidden]){background:#15543c;color:#fff;font-weight:650;padding:10px 16px;border-radius:4px;text-decoration:none}
 
-.walkthrough{display:grid;grid-template-columns:minmax(175px,.8fr) minmax(0,1.5fr);align-items:center;gap:18px;padding:18px}.walkthrough h2{font-size:1.17rem;margin:0}.walkthrough p{font-size:.9rem;margin:8px 0}.walkthrough img{display:block;width:100%;height:auto;border-radius:4px}.walkthrough button{padding:6px 15px}@media(max-width:640px){.walkthrough{grid-template-columns:1fr}}
+.walkthrough { display: grid; grid-template-columns: minmax(175px, .8fr) minmax(0, 1.5fr); align-items: center; gap: 18px; padding: 18px; }
+.walkthrough h2 { font-size: 1.17rem; margin: 0; }
+.walkthrough p { font-size: .9rem; margin: 8px 0; }
+.walkthrough select { max-width: 100%; border: 1px solid #82988a; border-radius: 4px; padding: 4px 6px; background: #fff; color: inherit; font: inherit; }
+#demo-toggle { position: relative; width: 100%; padding: 0; background: #090e0c; overflow: hidden; }
+#demo-toggle:focus-visible { outline: 3px solid #205f48; outline-offset: 3px; }
+#demo-screen { display: block; width: 100%; height: auto; aspect-ratio: 480 / 304; object-fit: contain; }
+.demo-control { position: absolute; inset: 0; display: grid; justify-items: center; align-content: center; gap: 7px; background: #06110cb3; }
+.demo-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #e5f5da; color: #163c32; }
+.demo-icon::before { content: ""; margin-left: 4px; border: solid transparent; border-width: 12px 0 12px 19px; border-left-color: currentColor; }
+#demo-toggle:hover .demo-icon { background: #fff; }
+#demo-play { font-size: .9rem; }
+#demo-toggle[data-playing="true"] .demo-control { inset: auto 8px 8px auto; background: none; }
+#demo-toggle[data-playing="true"] .demo-icon { width: 44px; height: 44px; }
+#demo-toggle[data-playing="true"] .demo-icon::before { width: 12px; height: 12px; margin: 0; border: 0; background: currentColor; }
+#demo-stop:not([hidden]) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media (max-width: 640px) { .walkthrough { grid-template-columns: 1fr; } }
+
+.install ol { padding-left: 1.4em; margin: 12px 0 0; }
+.install ol > li + li { margin-top: 18px; }
+.install p { margin: 4px 0; }
+.install .install-paths { list-style: none; padding: 8px 12px; margin: 8px 0; background: #f1f3ed; border-radius: 4px; }
+.install-paths li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.install-paths code { overflow-wrap: anywhere; }
+
+#history .entry p { white-space: pre-line; }

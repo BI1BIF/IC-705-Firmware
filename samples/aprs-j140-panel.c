@@ -540,19 +540,28 @@ void aprs_parse_packet(struct popup_packet *out, const struct output_frame *reco
     parse(out,record->bytes,addresses,record->length-addresses-4);
 }
 
-uint16_t aprs_offer_frame(const struct output_frame *record, uint16_t *distance)
+uint16_t aprs_offer_frame(const struct output_frame *record, struct output_frame *history)
 {
     const uint8_t *frame = record->bytes;
     unsigned addresses = address_bytes(frame);
     unsigned length = record->length-addresses-4;
     unsigned icon;
-    if (distance)
-        *distance = APRS_NO_DISTANCE;
+    if (history) {
+        history->distance=APRS_NO_DISTANCE;
+#ifdef APRS_SLOT_UI
+        history->history_direction=0;
+#endif
+    }
     static struct popup_packet packet; /* Only the record consumer writes the parse workspace. */
     parse(&packet,frame,addresses,length);
     if (packet.kind <= PERSONAL) {
-        if (distance)
-            *distance = aprs_packet_distance(&packet);
+        if (history) {
+#ifdef APRS_SLOT_UI
+            history->distance=aprs_packet_distance(&packet,&history->history_direction);
+#else
+            history->distance=aprs_packet_distance(&packet,0);
+#endif
+        }
         icon = (packet.symbol[0] << 8) | (uint8_t)packet.symbol[1];
     } else
         icon = packet.kind;

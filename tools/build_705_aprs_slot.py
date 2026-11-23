@@ -21,10 +21,50 @@ from tools.verify_705_ftx_rx import symbols
 from tools.replay_705_aprs_rx import build_target
 
 FIRST_OFFSET, TAIL_OFFSET = 0x21ea00, 0x5fc220
-FIRST_BYTES = 0xcc00
+FIRST_BYTES = 0xd148
 PREFIX_SLOTS = 20
 MODE_PICKER = 143
 ROOT = Path(".analysis/aprs-integration-base")
+
+
+def pack_module_chunk(data,start=0):
+    """Minimize the size of one stream consumed by ft_restore_modes."""
+    length=len(data)
+    links=[-1]*length
+    previous={}
+    for at in range(length-2):
+        key=data[at:at+3]
+        links[at]=previous.get(key,-1)
+        previous[key]=at
+    costs=[0]*(length+1)
+    choices=[None]*length
+    for at in range(length-1,start-1,-1):
+        limit=min(127,length-at)
+        size=min(range(1,limit+1),key=lambda n:costs[at+n]+n)
+        best=costs[at+size]+size+1
+        choices[at]=(size,0)
+        match=links[at]
+        longest=2
+        while match>=max(0,at-65535) and longest<limit:
+            if data[match:match+longest+1]==data[at:at+longest+1]:
+                end=limit
+                while data[match:match+end]!=data[at:at+end]:
+                    end-=1
+                for n in range(longest+1,end+1):
+                    cost=costs[at+n]+3
+                    if cost<best:
+                        best=cost
+                        choices[at]=(n,at-match)
+                longest=end
+            match=links[match]
+        costs[at]=best
+    at=start
+    packed=bytearray()
+    while at<length:
+        size,offset=choices[at]
+        packed.extend(pack("<BH",size,offset) if offset else bytes([128+size])+data[at:at+size])
+        at+=size
+    return bytes(packed)+b"\0"
 
 
 def slot_resources(folder, image, relocations):
@@ -32,14 +72,14 @@ def slot_resources(folder, image, relocations):
     fingerprint = 2166136261
     for value in image + reloc:
         fingerprint = ((fingerprint ^ value)*16777619) & 0xffffffff
-    tail = image[FIRST_BYTES:]
-    assert len(tail) > 0
-    tail = bytes(pack_init_tail(tail,0))
+    assert len(image)>FIRST_BYTES
+    # The first chunk is already present when the second one expands.
+    tail = pack_module_chunk(image,FIRST_BYTES)
     tail_hash=2166136261
     for byte in tail:
         tail_hash=((tail_hash^byte)*16777619)&0xffffffff
     reloc_offset = (len(tail)+1)&~1
-    first=bytes(pack_init_tail(image[:FIRST_BYTES],0))
+    first=pack_module_chunk(image[:FIRST_BYTES])
     first_hash=2166136261
     for byte in first:
         first_hash=((first_hash^byte)*16777619)&0xffffffff
@@ -66,14 +106,14 @@ def run(region, folder=None):
     european=region=="E"
     table=PICKER_TABLE+(224 if european else 0)
     manager=table+0xe00
-    prefix=table+0x3300
+    prefix=table+0x3340
     size=PICKER_ID*PICKER_STRIDE
     assert prefix+340*PREFIX_SLOTS<=table+size
     ft=symbols(FT_OUT/"rx.elf")
     sstv=symbols(FT_OUT/"sstv/rx.elf")
     entries=dict(UNPACK=ft["ft_restore_modes"]|1, FT_REQUEST=ft["ft_tx_requested_arm"], FT_SOURCE=ft["ft_tx_source_arm"], FT_MOD=ft["ft_tx_mod_block_arm"], FT_PREPARE=ft["ftx_prepare_frame"]|1, FT_STATE=ft["state"],FT_STAGE=ft["stage"],
                  SSTV_STAGE=sstv["tx_state"],SSTV_RX=sstv["sstv_rx_only"], MODE_PICKER=MODE_PICKER, MODE_ROWS=MENU+MODE_PICKER*PICKER_STRIDE,
-                 MODE_TEMPLATE=table+0x2540, HISTORY_TAIL_BYTES=22*340,
+                 MODE_TEMPLATE=table+0x2560, HISTORY_TAIL_BYTES=22*340,
                  HISTORY_LAST_BYTES=(64-PREFIX_SLOTS-22)*340)
     rom=e140_rom if european else lambda a:a
     for label,addr in dict(OPEN_MODE=0x200cd628,CLOSE_MODE=0x200cd828,APPLY_DV=0x200a27a4,

@@ -7,6 +7,7 @@ struct popup_packet aprs_popup_packet;
 
 enum { HEIGHT = 272, POPUP_RECT = 1518, UI_LAYER = 7, ICON_SIZE = 24, SYMBOL_CROP = 42 };
 enum { WHITE = 15, MUTED = 57 };
+enum { DETAIL_TOP = 109, DETAIL_STEP = 19, DETAIL_LAST = 205 };
 struct point { uint16_t x, y; };
 
 static const char *const directions[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
@@ -67,16 +68,16 @@ static void fitted(const char *text, unsigned x, unsigned y, unsigned font, unsi
     }
 }
 
-static void wrapped_text(const char *text, unsigned x, unsigned left, unsigned y, const char *heading)
+static void wrapped_text(const char *text, unsigned x, unsigned left, unsigned y, unsigned last, const char *heading)
 {
-    enum { LINE_STEP = 17, LAST_BASELINE = 215, RIGHT = 361 };
+    enum { RIGHT = 361 };
     while (*text == ' ')
         ++text;
     if (!*text)
         return;
     if (heading)
         label(heading, left, y, 14, MUTED, 0);
-    while (*text && y + LINE_STEP <= LAST_BASELINE) {
+    while (*text && y + DETAIL_STEP <= last) {
         unsigned n = length(text);
         unsigned count = fit(text, n, 16, RIGHT - x);
         unsigned end = count;
@@ -94,10 +95,22 @@ static void wrapped_text(const char *text, unsigned x, unsigned left, unsigned y
         while (*text == ' ')
             ++text;
         x = left;
-        y += LINE_STEP;
+        y += DETAIL_STEP;
     }
     if (*text)
         fitted(text, x, y, 16, WHITE, RIGHT - x);
+}
+
+static void raw_route(const char *text, unsigned reply)
+{
+    /* The controls own their whole pixel rectangle, including the bevel. */
+    for (unsigned y=reply ? 204 : 218;*text && y<=260;y+=13) {
+        unsigned width=y==204 ? 350 : reply && y>=230 ? 168 : 253;
+        unsigned count=fit(text,length(text),11,width);
+        if (!count) break;
+        label_span(text,count,14,y,11,MUTED,0);
+        text+=count;
+    }
 }
 
 static void clear_color(const float *rgba)
@@ -123,6 +136,22 @@ static void blit(const uint16_t *pixels, unsigned x, unsigned y, unsigned w, uns
     typedef void (*write_pixels)(const uint16_t *, int, unsigned, int, int, int, int);
     clean_pixels(pixels, w*h*sizeof(*pixels));
     ((write_pixels)0x20263b13)(pixels + (h-1)*w, -2*(int)w, 3, x, HEIGHT-y-h, w, h);
+}
+
+void aprs_draw_direction(unsigned direction,unsigned left,unsigned top,uint16_t background)
+{
+    static const int8_t axis[8][2]={{0,-2},{1,-1},{2,0},{1,1},{0,2},{-1,1},{-2,0},{-1,-1}};
+    const int8_t *v=axis[direction-1];
+    uint16_t pixels[14*14] __attribute__((aligned(8)));
+    for (int y=0;y<14;++y) {
+        for (int x=0;x<14;++x) {
+            int a=(x-6)*v[0]+(y-6)*v[1], b=(x-6)*v[1]-(y-6)*v[0];
+            if (v[0] && v[1]) { a=a*3/2;b=b*3/2; }
+            int edge=__builtin_abs(b);
+            pixels[y*14+x]=a+edge>=-2 && a+2*edge<=12 ? (b<0 ? 0xf904 : 0xc103) : background;
+        }
+    }
+    blit(pixels,left,top,14,14);
 }
 
 static void fix_badge(enum aprs_fix fix)
@@ -503,11 +532,13 @@ static uint16_t encode_distance(unsigned metres, unsigned ambiguous)
     return value | (ambiguous ? 0x8000 : 0);
 }
 
-uint16_t aprs_packet_distance(const struct popup_packet *p)
+uint16_t aprs_packet_distance(const struct popup_packet *p,uint32_t *direction)
 {
     unsigned metres;
-    int bearing;
+    int bearing=-1;
     enum aprs_fix fix = gps_position(p, &metres, &bearing);
+    if (direction && bearing>=0 && metres)
+        *direction=1+(((bearing+22)/45)&7);
     return fix == NO_FIX ? APRS_NO_DISTANCE : encode_distance(metres, p->ambiguous || fix == LAST_FIX);
 }
 
@@ -546,21 +577,21 @@ static void reading(const char *name, int n, unsigned width, const char *unit, u
     row(name, value, y);
 }
 
-static void motion_line(const struct popup_packet *p)
+static void motion_line(const struct popup_packet *p, unsigned y)
 {
     char value[16];
-    label("SPEED", 133, 157, 12, MUTED, 0);
+    label("SPEED", 133, y, 12, MUTED, 0);
     if (p->speed == NO_READING)
         append(value, "--");
     else
         append(number(value, p->speed, 1), " km/h");
-    label(value, 183, 157, 14, WHITE, 0);
-    label("COURSE", 264, 157, 12, MUTED, 0);
+    label(value, 183, y, 14, WHITE, 0);
+    label("COURSE", 264, y, 12, MUTED, 0);
     if (p->course == NO_READING)
         append(value, "--");
     else
         append(number(value, p->course, 3), "\xdf");
-    label(value, 361, 157, 15, WHITE, 2);
+    label(value, 361, y, 15, WHITE, 2);
 }
 
 static void coord_row(const char *name, const char *raw, unsigned width, unsigned y, unsigned ambiguous)
@@ -597,10 +628,17 @@ void aprs_draw_popup(void)
         title=p->comment[0]=='a' ? "MESSAGE ACK" : "MESSAGE REJECTED";
     else if (p->alert_event == ALERT_WEATHER && p->kind == PACKET)
         title="WEATHER REPORT";
+    float saved[4];
+    ((void (*)(unsigned, unsigned, float *))0x202632a1)(0x1121, 4, saved);
+    clear_color(rule);
+    rect(14, 52, 350, 1);
+    if (p->kind <= PERSONAL)
+        rect(120, 63, 1, 145);
+    clear_color(saved);
+    label(title, 13, 43, 18, WHITE, 0);
     if (p->kind > PERSONAL) {
-        label(title, 13, 43, 18, WHITE, 0);
-        aprs_draw_icon(p->kind, 14, 63, 0);
-        label(p->station, 46, 81, 22, WHITE, 0);
+        aprs_draw_icon(p->kind, 14, 58, 0);
+        label(p->station, 46, 76, 22, WHITE, 0);
         if (p->kind == MESSAGE) {
             label("TO", 14, 112, 14, MUTED, 0);
             label(p->longitude, 46, 112, 16, WHITE, 0);
@@ -609,9 +647,14 @@ void aprs_draw_popup(void)
                 label(p->message_id, 293, 112, 16, WHITE, 0);
             }
         }
-        wrapped_text(p->comment, 14, 14, p->kind == MESSAGE ? 137 : 111, 0);
 #ifdef APRS_SLOT_UI
-        if (aprs_can_reply(p)) {
+        unsigned reply=aprs_can_reply(p);
+#else
+        unsigned reply=0;
+#endif
+        wrapped_text(p->comment, 14, 14, p->kind == MESSAGE ? 133 : 111, reply ? 190 : DETAIL_LAST, 0);
+#ifdef APRS_SLOT_UI
+        if (reply) {
             uint16_t line[80] __attribute__((aligned(8)));
             for (unsigned y=0; y<42; ++y) {
                 unsigned shade=8-y/7;
@@ -623,73 +666,66 @@ void aprs_draw_popup(void)
                 blit(line,187,222+y,80,1);
             }
             label("Reply", 227, 249, 18, WHITE, 1);
-            fitted(p->route, 14, 242, 12, MUTED, 173);
-        } else
+        }
 #endif
-        fitted(p->route, 14, 242, 12, MUTED, 253);
+        raw_route(p->route,reply);
         return;
     }
     unsigned metres;
     int bearing = -1;
     enum aprs_fix fix = gps_position(p, &metres, &bearing);
 
-    float saved[4];
-    ((void (*)(unsigned, unsigned, float *))0x202632a1)(0x1121, 4, saved);
-    clear_color(rule);
-    rect(14, 52, 350, 1);
-    rect(120, 63, 1, 145);
-    clear_color(saved);
-    label(title, 13, 43, 18, WHITE, 0);
     fix_badge(fix);
     dial_face(bearing);
     char value[24];
     aprs_distance_text(value, fix == NO_FIX ? APRS_NO_DISTANCE : encode_distance(metres,p->ambiguous));
-    label(value, 62, 177, 22, WHITE, 1);
+    unsigned font=fit(value,length(value),22,88)==length(value) ? 22 : 18;
+    label(value, 62, 172, font, WHITE, 1);
     if (bearing >= 0)
         append(append(number(value, bearing, 3), "\xdf "), direction(bearing));
     else
         append(value, "--");
-    label(value, 62, 202, 15, MUTED, 1);
+    label(value, 62, 196, 15, MUTED, 1);
 
-    aprs_draw_icon((p->symbol[0] << 8) | (uint8_t)p->symbol[1], 133, 70, 0);
+    aprs_draw_icon((p->symbol[0] << 8) | (uint8_t)p->symbol[1], 133, 64, 0);
 #ifdef APRS_SLOT_UI
-    label(p->entity[0] ? p->entity : p->station,165,88,22,WHITE,0);
+    label(p->entity[0] ? p->entity : p->station,165,82,22,WHITE,0);
 #else
-    label(p->station,165,88,22,WHITE,0);
+    label(p->station,165,82,22,WHITE,0);
 #endif
     if (p->kind == WEATHER) {
-        reading("TEMP", p->temperature, 1, "\xdf" "C", 111);
-        reading("HUM", p->humidity, 1, "%", 134);
+        reading("TEMP", p->temperature, 1, "\xdf" "C", DETAIL_TOP);
+        reading("HUM", p->humidity, 1, "%", DETAIL_TOP+DETAIL_STEP);
         if (p->speed != NO_READING) {
             char *wind = value;
             if (p->course != NO_READING)
                 wind = append(append(wind, direction(p->course)), " ");
             append(number(wind, p->speed, 1), " km/h");
-            row("WIND", value, 157);
+            row("WIND", value, DETAIL_TOP+2*DETAIL_STEP);
         } else {
-            row("WIND", "--", 157);
+            row("WIND", "--", DETAIL_TOP+2*DETAIL_STEP);
         }
-        reading("PRESS", p->pressure, 1, " hPa", 180);
+        reading("PRESS", p->pressure, 1, " hPa", DETAIL_TOP+3*DETAIL_STEP);
     } else {
-        unsigned y = 111;
+        unsigned y = DETAIL_TOP;
         if (p->kind == IGATE) {
             row("MODE", p->symbol[0] == 'R' ? "RX ONLY" : p->symbol[0] == 'T' || p->symbol[0] == '2' ?
                 "TX IGATE" : p->symbol[0] == 'L' ? "LoRa IGATE" : "IGATE", y);
-            y += 23;
+            y += DETAIL_STEP;
         }
         coord_row("LAT", p->latitude, 2, y, p->ambiguous);
-        coord_row("LON", p->longitude, 3, y+23, p->ambiguous);
-        unsigned comment_y = y + 46;
+        coord_row("LON", p->longitude, 3, y+DETAIL_STEP, p->ambiguous);
+        unsigned comment_y = y+2*DETAIL_STEP;
         if (p->kind == BEACON && (p->course != NO_READING || p->speed != NO_READING)) {
             if (*p->comment) {
-                motion_line(p);
-                comment_y = 174;
+                motion_line(p,comment_y);
+                comment_y += DETAIL_STEP;
             } else {
-                reading("SPEED", p->speed, 1, " km/h", 157);
-                reading("COURSE", p->course, 3, "\xdf", 180);
+                reading("SPEED", p->speed, 1, " km/h", comment_y);
+                reading("COURSE", p->course, 3, "\xdf", comment_y+DETAIL_STEP);
             }
         }
-        wrapped_text(p->comment, 225, 133, comment_y, "COMMENT");
+        wrapped_text(p->comment, 225, 133, comment_y, DETAIL_LAST, "COMMENT");
     }
-    fitted(p->route, 14, 242, 12, MUTED, 253);
+    raw_route(p->route,0);
 }

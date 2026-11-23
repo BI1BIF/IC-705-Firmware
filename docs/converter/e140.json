@@ -1,30 +1,42 @@
 {
-  "version": "v1.4.0",
+  "version": "v1.5.0",
   "size": 12279020,
   "stock": "132383f8388641d02d0fadaccf9878d01a1960fa77a028328f0eb33dcfbc147b",
-  "target": "3863d5372d0649e638d66dd2b372b1b8d3643f849dafbae745ceb45bfe7c17d6",
-  "patch": "4739a7b399a27a3095b81c725d97fa765735f98f93f7f1d650593884a0c73177.xor.gz",
-  "patchHash": "4739a7b399a27a3095b81c725d97fa765735f98f93f7f1d650593884a0c73177",
+  "target": "516ca1a5814bf052108771df86f3f7ca01a1271cc43bd162a3e9868c463f343e",
+  "patch": "5e4c7e1a1b5485442f5697ce4e1e7372d28c1c3b0632e44eb7939dfbb36b41f1.xor.gz",
+  "patchHash": "5e4c7e1a1b5485442f5697ce4e1e7372d28c1c3b0632e44eb7939dfbb36b41f1",
   "notes": {
     "features": {
       "zh": [
         "CW 译码：在电台屏幕上查看译文、速度和波形。",
         "SSTV 接收：自动识别 23 种模式，可保存和回看图片。",
         "SSTV 发射：从 SD 卡选图，选择 23 种模式之一，点 SEND 发射。",
-        "FT8／FT4 接收：从 MODE → FT8/4 进入，查看十行报文、A/B 时隙、信噪比、音频频率、国家或地区及可用的网格距离。支持 GPS 或机内时钟授时。",
+        "FT8／FT4：守听与通联同屏，支持手动、半自动、全自动和同隙多人来叫点选，日志落盘。",
         "FT8／FT4 通联：主动呼叫 CQ、点选电台应答，或启用自动选台与自动通联。完成的通联追加到 SD 卡 IC-705/FTLOG.ADI。",
-        "APRS：普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。"
+        "APRS：普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。",
+        "数字语音接收：支持明文 DMR、C4FM 和常规 P25 Phase 1。通过 MODE 的 DV 键循环切换，需在 SD 卡 IC-705 目录保留 DMRRX.BIN。"
       ],
       "en": [
         "CW decoding: read decoded text, speed and waveform on the radio.",
         "SSTV reception: automatically recognize 23 modes, save pictures and browse earlier images.",
         "SSTV transmission: select a photo from the SD card, choose one of 23 modes and tap SEND.",
-        "FT8/FT4 reception: open MODE → FT8/4 for ten rows of decodes with slot, SNR, audio frequency, country or region, and distance when a grid is available. Select GPS or the internal clock.",
+        "FT8/FT4 keeps the receive list visible during contacts, with manual, semi-auto and full-auto operation, caller selection and ADIF logging.",
         "FT8/FT4 contacts: call CQ, tap a station to reply, or enable automatic caller selection and sequencing. Completed contacts are appended to IC-705/FTLOG.ADI on the SD card.",
-        "APRS: in FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS."
+        "APRS: in FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS.",
+        "Digital voice reception covers clear DMR, C4FM and conventional P25 Phase 1. Cycle through them with the MODE menu’s DV key. Keep DMRRX.BIN in the IC-705 folder on the SD card."
       ]
     },
     "history": [
+      {
+        "version": "v1.5.0",
+        "date": "2026-11-23",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "FT8／FT4 操作页。通联时保留十行守听报文。右侧显示操作模式、通联状态、对台、待发报文、发射时隙、音频频率及发送次数。制式名与 A/B 时隙对齐，进度条显示当前时隙进度。每行显示 22 个报文字符，超长报文用省略号提示。QTH、dB、Hz、km 的表头与内容左对齐，四字地名和五位公里数可完整显示。\n\nFT8／FT4 发射与日志。手动逐报确认，半自动由操作者发起并自动编序，同一时隙有多个来叫时可点选对台。全自动由操作者启动 CQ 或找台，可设发送次数上限，无应答时可停止、换台或回到 CQ，并给未应答台留出冷却时间。支持输入指定呼号、点选刚发出 73／RR73 的对台、查看历史后返回守听，以及用停止键或实体 EXIT 中止发射。完成的通联写入 SD 卡 IC-705/FTLOG.ADI，使用机内时钟时按原厂时区换算成 UTC。\n\n数字语音。新增明文 DMR、C4FM 和常规 P25 Phase 1 接收，从 MODE 菜单的 DV 键循环切换。DMR 支持通话中途接入、来电信息与提示音，播放响度随 AF 调节，接收绿灯按当前频点的有效语音点亮。三个新增模式均用于接收。日版与欧／美版共用卡文件 IC-705/DMRRX.BIN。\n\nAPRS。最近 64 条接收记录可保存到 SD 卡，重启后恢复，支持旧记录及不完整写入后的恢复。有本机位置时，列表可查看收包时的距离与方位。接收弹窗及详情采用统一表头。双向消息、手动与自动信标沿用 v1.4.0。\n\nSSTV 与 CW。保留 23 种 SSTV 模式收发、SD 卡选图、长文件名 JPEG 重发、半屏发射扫描线，以及 CW 译码、速度和波形显示。\n\n转换页与安装。使用对应地区的 Icom 原厂 1.40 DAT 生成 v1.5.0 固件。页面提供数字语音 SD 文件包、配套源码、中英文安装说明及更新日志。将生成的地区 DAT 与解压后的 DMRRX.BIN 放入 SD 卡 IC-705 目录，从电台的 Firmware Update 菜单选择该 DAT。页面可点击三角播放按钮预览新版 FT8／FT4、数字语音和 APRS。",
+        "en": "FT8/FT4 operating screen. The ten-row receive list stays visible during a contact. The sidebar shows the operating mode, contact state, station, pending message, transmit slot, audio frequency and attempt count. The A/B label aligns with the mode name beside a single slot progress bar. Each row fits 22 message characters and marks longer messages with an ellipsis. The QTH, dB, Hz and km columns are left-aligned with their headings and fit four Chinese characters or a five-digit distance.\n\nFT8/FT4 transmission and logging. Manual mode confirms each message. Semi-auto sequences an operator-started contact and lets the operator select among simultaneous callers. Full auto explicitly starts CQ or station search, limits attempts and can stop, move on or return to CQ after no reply, with a cooldown for unanswered stations. Enter a callsign, call a station that just sent 73 or RR73, return from history to live reception, or stop with the on-screen key or physical EXIT. Completed contacts are saved to IC-705/FTLOG.ADI on the SD card. Logs made with the internal clock use the radio's UTC offset.\n\nDigital voice. Cycle the DV key in the MODE menu to receive clear DMR, C4FM or conventional P25 Phase 1. DMR can join calls in progress, display caller information and play call alerts. The AF control sets playback volume. Valid voice on the tuned frequency drives the receive LED. All three modes are receive-only and use the same IC-705/DMRRX.BIN card file in both regions.\n\nAPRS. Save the latest 64 received packets to SD and restore them on restart, including older records and recovery after an incomplete write. The list shows distance and bearing at reception when a local position is available. Receive popups and detail screens share a consistent header. Two-way messaging and manual and automatic beaconing carry forward from v1.4.0.\n\nSSTV and CW. The bundle retains all 23 SSTV receive and transmit modes, SD image selection, long-filename JPEG retransmission, the half-screen transmit scan line, and CW decoding with speed and waveform displays.\n\nConverter and installation. Generate v1.5.0 from the matching regional Icom 1.40 DAT. The page includes a digital voice SD download, accompanying source, bilingual installation instructions and release notes. Put the generated regional DAT and the extracted DMRRX.BIN in the SD card's IC-705 folder, then select the DAT in the radio's Firmware Update menu. Use the triangular play buttons to preview FT8/FT4, digital voice and APRS."
+      },
       {
         "version": "v1.4.0",
         "date": "2026-11-22",

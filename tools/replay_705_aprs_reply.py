@@ -71,9 +71,9 @@ def exercise(guest,folder,base,sy,ms,gps,tones,*,timer_baseline=False,ptt_baseli
         guest._press_key(0,1)
         screen("01f-smart-set","Beacon Interval  Smart")
         prepare()
-        assert any(data[16]==5 for data in card.values())
-        for path,data in card.items():
-            (out/path.rsplit("\\",1)[-1]).write_bytes(data)
+        assert any(card[path][16]==5 for path in cardnames if path in card)
+        for path in cardnames:
+            (out/path.rsplit("\\",1)[-1]).write_bytes(card[path])
         tap(3);guest.render();guest.click(395,65);guest.render()
     tap(0);screen("01g-interval-set","Beacon Interval  1 min")
     prepare()
@@ -101,9 +101,9 @@ def exercise(guest,folder,base,sy,ms,gps,tones,*,timer_baseline=False,ptt_baseli
     if default_comment:
         assert not u(sym("comment_saved"),1)
     else:
-        assert len(card)==2 and bytes(cpu.mem_read(sym("saved_comment"),11))==b"Field test\0"
-        for path,contents in card.items():
-            (folder/path.rsplit("\\",1)[-1]).write_bytes(contents)
+        assert all(path in card for path in cardnames) and bytes(cpu.mem_read(sym("saved_comment"),11))==b"Field test\0"
+        for path in cardnames:
+            (folder/path.rsplit("\\",1)[-1]).write_bytes(card[path])
     # Put Direct and manual timing back for the original RF fixtures.
     tap(0);guest.render();tap(0);guest.render()
     guest.click(395,65);guest.render();tap(2);guest.render();tap(0);guest.render()

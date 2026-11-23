@@ -43,14 +43,15 @@ class EuropeanReplay:
         self.rom = european_update_rom(japan, stock)
         self.defaults = unpack_from("<I", stock, 0x30c)[0]
 
-    def station_guest(self, dat):
+    def station_guest(self, dat, *, loaded_bytes=None):
         image, flash = load_a(dat, self.main_hash)
         from tools.replay_705_stock_install import A_PREFIX
         guest = SettingsGuest(panel_graphics(self.stock, self.flash, flash[:A_PREFIX]),
                               front_panel=True, rom=self.rom, language_address=0x203eae44)
         cpu = guest.cpu
-        cpu.mem_write(BASE, image)
-        cpu.ctl_remove_cache(BASE, BASE+len(image))
+        application = image[:loaded_bytes]
+        cpu.mem_write(BASE, application)
+        cpu.ctl_remove_cache(BASE, BASE+len(application))
         desc, end = unpack_from("<II", image, 0x2e4)
         # The first five records initialize stock RAM. This component fixture
         # preserves its modeled display device and initializes the two menu records.

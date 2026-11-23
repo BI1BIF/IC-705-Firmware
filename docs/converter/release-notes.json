@@ -4,20 +4,32 @@
       "CW 译码：在电台屏幕上查看译文、速度和波形。",
       "SSTV 接收：自动识别 23 种模式，可保存和回看图片。",
       "SSTV 发射：从 SD 卡选图，选择 23 种模式之一，点 SEND 发射。",
-      "FT8／FT4 接收：从 MODE → FT8/4 进入，查看十行报文、A/B 时隙、信噪比、音频频率、国家或地区及可用的网格距离。支持 GPS 或机内时钟授时。",
+      "FT8／FT4：守听与通联同屏，支持手动、半自动、全自动和同隙多人来叫点选，日志落盘。",
       "FT8／FT4 通联：主动呼叫 CQ、点选电台应答，或启用自动选台与自动通联。完成的通联追加到 SD 卡 IC-705/FTLOG.ADI。",
-      "APRS：普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。"
+      "APRS：普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。",
+      "数字语音接收：支持明文 DMR、C4FM 和常规 P25 Phase 1。通过 MODE 的 DV 键循环切换，需在 SD 卡 IC-705 目录保留 DMRRX.BIN。"
     ],
     "en": [
       "CW decoding: read decoded text, speed and waveform on the radio.",
       "SSTV reception: automatically recognize 23 modes, save pictures and browse earlier images.",
       "SSTV transmission: select a photo from the SD card, choose one of 23 modes and tap SEND.",
-      "FT8/FT4 reception: open MODE → FT8/4 for ten rows of decodes with slot, SNR, audio frequency, country or region, and distance when a grid is available. Select GPS or the internal clock.",
+      "FT8/FT4 keeps the receive list visible during contacts, with manual, semi-auto and full-auto operation, caller selection and ADIF logging.",
       "FT8/FT4 contacts: call CQ, tap a station to reply, or enable automatic caller selection and sequencing. Completed contacts are appended to IC-705/FTLOG.ADI on the SD card.",
-      "APRS: in FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS."
+      "APRS: in FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS.",
+      "Digital voice reception covers clear DMR, C4FM and conventional P25 Phase 1. Cycle through them with the MODE menu’s DV key. Keep DMRRX.BIN in the IC-705 folder on the SD card."
     ]
   },
   "history": [
+    {
+      "version": "v1.5.0",
+      "date": "2026-11-23",
+      "regions": [
+        "J140",
+        "E140"
+      ],
+      "zh": "新增功能\n• 数字语音支持接收明文 DMR、C4FM 和常规 P25 Phase 1。\n• FT8／FT4 支持指定呼号呼叫。同一时隙有多人应答时，可点选对台。\n• APRS 可保存最近 64 条接收记录，重启后可继续查看。\n• 转换页新增数字语音卡文件下载、安装说明和可点击播放的功能演示。\n\n功能调整\n• FT8／FT4 通联时仍可看十行报文，每行最多 22 个字符。QTH、dB、Hz 和 km 的表头与内容左对齐。\n• FT8／FT4 可选手动、半自动或全自动。全自动可设发送次数上限，并选择无应答时停止、换台或回到 CQ。\n• APRS 列表在有本机位置时显示收包方位，接收弹窗和详情页统一了表头。\n\n问题修复\n• 修复 FT8／FT4 使用机内时钟时，通联日志可能把本地时间记作 UTC 的问题。",
+      "en": "Added\n• Digital voice reception for clear DMR, C4FM and conventional P25 Phase 1.\n• FT8/FT4 can call a specific callsign and lets you choose a station when several reply in the same slot.\n• APRS can save the last 64 received packets and restore them after a restart.\n• The converter page adds a digital voice SD download, installation instructions and click-to-play demos.\n\nChanged\n• The ten-row FT8/FT4 list stays visible during contacts. Each row fits 22 characters, and the QTH, dB, Hz and km headings line up with their values.\n• FT8/FT4 offers manual, semi-auto and full-auto operation. In full auto, set an attempt limit and choose whether to stop, try another station or call CQ again after no reply.\n• The APRS list shows packet bearings when the radio has a position. Receive popups and detail screens use the same header.\n\nFixed\n• Corrected the UTC time recorded in FT8/FT4 contact logs when using the radio’s internal clock and a local time-zone offset."
+    },
     {
       "version": "v1.4.0",
       "date": "2026-11-22",

@@ -1,7 +1,7 @@
 /* J140 FM receive records serviced by the original audio task. */
 #include "aprs-j140-popup.h"
 
-uint16_t aprs_offer_frame(const struct output_frame *record, uint16_t *distance);
+uint16_t aprs_offer_frame(const struct output_frame *record, struct output_frame *history);
 void aprs_history_begin_record(unsigned sequence);
 void aprs_history_commit_record(unsigned sequence, unsigned icon);
 
@@ -93,6 +93,10 @@ void aprs_copy_pcm(int16_t *pcm)
 
 void aprs_record_receive(void)
 {
+#ifdef APRS_SLOT_UI
+    extern volatile uint8_t aprs_history_loading;
+    if (aprs_history_loading) return;
+#endif
 #ifdef APRS_COMBINED
     extern volatile unsigned ft_session_state, ft_tx_stage;
     if (ft_session_state || ft_tx_stage) {
@@ -113,11 +117,13 @@ void aprs_record_receive(void)
         }
         struct output_frame *record = aprs_record_slot(aprs_record_count % RECORD_SLOTS);
         aprs_history_begin_record(aprs_record_count);
+#ifndef APRS_SLOT_UI
         record->end_sample = frame->end_sample;
+#endif
         record->length = frame->length;
         for (uint32_t n = 0; n < frame->length; ++n)
             record->bytes[n] = frame->bytes[n];
-        unsigned icon = aprs_offer_frame(record, &record->distance);
+        unsigned icon = aprs_offer_frame(record, record);
         aprs_history_commit_record(aprs_record_count, icon);
         __atomic_store_n(&aprs_record_count, aprs_record_count + 1, __ATOMIC_RELEASE);
         ++aprs_rx_read;

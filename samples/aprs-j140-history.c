@@ -31,6 +31,7 @@ struct history_row {
     char station[10];
     uint16_t icon, distance;
     struct timestamp stamp;
+    uint8_t direction;
 #ifdef APRS_SLOT_UI
     char owner[10];
     uint8_t entity,removed;
@@ -67,6 +68,144 @@ static void local_timestamp(struct timestamp *stamp)
 
 #ifdef APRS_SLOT_UI
 static uint8_t unread_bits[8] APRS_KEEP;
+
+/* One spare sector keeps the last 64 complete records intact during a write. */
+enum { CARD_SLOTS = RECORD_SLOTS + 1, CARD_STRIDE = 512 };
+static uint32_t card_sequence APRS_KEEP, history_saved APRS_KEEP, history_retry APRS_KEEP;
+static uint8_t history_scanned APRS_KEEP;
+volatile uint8_t aprs_history_loading;
+struct card_record {
+    uint32_t sequence;
+    struct output_frame frame;
+    uint16_t icon;
+    struct timestamp stamp;
+    uint32_t checksum;
+};
+_Static_assert(sizeof(struct card_record) == 356, "APRS history disk record");
+#define HISTORY_PATH "C:\\IC-705\\APRHIST.BIN"
+#define CARD_OPEN ((int (*)(const char *,unsigned,int *))0x2023fec8)
+#define CARD_CLOSE ((int (*)(int))0x2023fee4)
+#define CARD_SEEK ((int (*)(int,int,unsigned,unsigned *))0x2023ff64)
+#define CARD_READ ((int (*)(int,void *,unsigned,unsigned *))0x2023ff00)
+#define CARD_WRITE ((int (*)(int,const void *,unsigned,unsigned *))0x2023ff18)
+
+static uint32_t history_checksum(const struct card_record *record)
+{
+    return aprs_card_checksum(record,__builtin_offsetof(struct card_record,checksum)) ^ 0x32585241;
+}
+
+/* Seek to a sector and leave its neighbours untouched, including on short I/O. */
+static int read_history(int fd,unsigned i,struct card_record *record)
+{
+    unsigned offset;
+    if (CARD_SEEK(fd,i*CARD_STRIDE,0,&offset) || offset!=i*CARD_STRIDE) return -1;
+    unsigned bytes=0;
+    if (CARD_READ(fd,record,sizeof(*record),&bytes)) return -1;
+    if (bytes!=sizeof(*record) ||
+        !record->sequence || (record->sequence-1)%CARD_SLOTS!=i ||
+        record->frame.length<18 || record->frame.length>FRAME_MAX) return 0;
+    uint32_t checksum=history_checksum(record);
+    if (record->checksum==(checksum ^ 0x03000000))
+        record->frame.history_direction=0;  /* Older cards stored a modem sample counter here. */
+    else if (record->checksum!=checksum || record->frame.history_direction>8)
+        return 0;
+    /* The popup parser expects a bounded, modem-validated AX.25 address list. */
+    unsigned addr=14;
+    while (addr+4<=record->frame.length && addr<=70) {
+        if (record->frame.bytes[addr-1]&1) return 1;
+        addr+=7;
+    }
+    return 0;
+}
+
+static int scan_history(struct card_record *record)
+{
+    int fd;
+    card_sequence=0;
+    int rc=CARD_OPEN(HISTORY_PATH,0,&fd);
+    if (rc) return rc==2 || rc==7;
+    unsigned size, restored=0;
+    if (CARD_SEEK(fd,0,2,&size)) goto failed;
+    for (unsigned i=0;i<CARD_SLOTS && i*CARD_STRIDE<size;++i) {
+        rc=read_history(fd,i,record);
+        if (rc<0) goto failed;
+        if (rc && record->sequence>card_sequence)
+            card_sequence=record->sequence;
+    }
+    if (!aprs_record_count) {
+        unsigned first=card_sequence>RECORD_SLOTS ? card_sequence-RECORD_SLOTS : 0;
+        for (unsigned i=first;i<card_sequence;++i) {
+            rc=read_history(fd,i%CARD_SLOTS,record);
+            if (rc<0) goto failed;
+            if (!rc || record->sequence!=i+1) continue;
+            *aprs_record_slot(restored)=record->frame;
+            arrival[restored]=(struct received){restored+1,record->icon,record->stamp};
+            ++restored;
+        }
+    }
+    if (CARD_CLOSE(fd)) return 0;
+    if (restored) {
+        history_saved=restored;
+        __atomic_store_n(&aprs_record_count,restored,__ATOMIC_RELEASE);
+    }
+    return 1;
+failed:
+    CARD_CLOSE(fd);
+    return 0;
+}
+
+void aprs_history_card_poll(unsigned mount)
+{
+    struct {
+        struct card_record record;
+        uint8_t padding[CARD_STRIDE-sizeof(struct card_record)];
+    } sector;
+    struct card_record *record=&sector.record;
+    if (mount) {
+        history_scanned=0;
+        history_retry=0;
+    }
+    uint32_t now=*(volatile const uint32_t *)0x20381e08;
+    if (history_retry && (int32_t)(now-history_retry)<0) return;
+    if (!history_scanned) {
+        aprs_history_loading=1;
+        history_scanned=scan_history(record);
+        aprs_history_loading=0;
+        if (!history_scanned) {
+            history_retry=now+5000;
+            return;
+        }
+    }
+    unsigned count=__atomic_load_n(&aprs_record_count,__ATOMIC_ACQUIRE);
+    if (history_saved==count) return;
+    unsigned pending=count-history_saved;
+    unsigned index=pending>RECORD_SLOTS ? count-RECORD_SLOTS : history_saved;
+    const struct received *item=arrival+index%RECORD_SLOTS;
+    if (__atomic_load_n(&item->sequence,__ATOMIC_ACQUIRE)!=index+1) return;
+    record->sequence=card_sequence+1;
+    record->frame=*aprs_record_slot(index%RECORD_SLOTS);
+    record->icon=item->icon;
+    record->stamp=item->stamp;
+    __atomic_thread_fence(__ATOMIC_ACQUIRE);
+    if (__atomic_load_n(&item->sequence,__ATOMIC_RELAXED)!=index+1) return;
+    /* Clear unused frame bytes before writing the on-disk record. */
+    __builtin_memset(record->frame.bytes+record->frame.length,0,FRAME_MAX-record->frame.length);
+    __builtin_memset(sector.padding,0,sizeof(sector.padding));
+    record->checksum=history_checksum(record);
+    int fd;
+    if (!CARD_OPEN(HISTORY_PATH,0x202,&fd)) {
+        unsigned position=(card_sequence%CARD_SLOTS)*CARD_STRIDE, offset=0, bytes=0;
+        int written=!CARD_SEEK(fd,position,0,&offset) && offset==position &&
+                    !CARD_WRITE(fd,&sector,sizeof(sector),&bytes) && bytes==sizeof(sector);
+        if (!CARD_CLOSE(fd) && written) {
+            card_sequence=record->sequence;
+            history_saved=index+1;
+            history_retry=0;
+            return;
+        }
+    }
+    history_retry=now+5000;
+}
 #endif
 void aprs_history_commit_record(unsigned sequence, unsigned icon)
 {
@@ -185,7 +324,11 @@ static void history_snapshot(void)
         row->station[aprs_call_text(row->station, aprs_record_slot(slot)->bytes + 7)] = 0;
         row->stamp = item->stamp;
         row->icon = item->icon == 0xfffe ? MESSAGE : item->icon;
-        row->distance = aprs_record_slot(slot)->distance;
+        const struct output_frame *record=aprs_record_slot(slot);
+        row->distance = record->distance;
+#ifdef APRS_SLOT_UI
+        row->direction = record->history_direction;
+#endif
 #ifdef APRS_SLOT_UI
         row->entity=row->removed=0;
         identity(row,aprs_record_slot(slot),slot,sequence);
@@ -399,6 +542,10 @@ void aprs_history_text(unsigned layer, unsigned rect, const char *title, unsigne
         while (distance[n])
             ++n;
         call_xy[1] += 22;
+        if (row->direction && row->direction<=8) {
+            aprs_draw_direction(row->direction,box[1]+42,box[2]+35,color==17 ? 0x5d19 : 0);
+            call_xy[0] += 17;
+        }
         draw(layer, rect, distance, n, format, font, color, call_xy, align, language);
     }
     char time[9], date[11];

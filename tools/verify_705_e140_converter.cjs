@@ -33,6 +33,13 @@ async function main() {
     await page.waitForFunction(() => !document.querySelector("#source").disabled);
     const manifest = name => JSON.parse(fs.readFileSync(path.join(site, "converter", name), "utf8"));
     const {history, features} = manifest("release-notes.json");
+    const digest = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
+    const cardPath = path.join(site, "converter", "digital-voice-sd.zip");
+    const digitalCard = fs.existsSync(cardPath) ? fs.readFileSync(cardPath) : null;
+    const preview = process.env.IC705_PREVIEW_DIR;
+    if (preview) fs.mkdirSync(preview, {recursive: true});
+    const demoAssets = {};
+    let cardHash;
     assert.equal(await page.locator("#version").innerText(), history[0].version);
     for (const language of ["en", "zh"]) {
       await page.locator("#" + language).click();
@@ -44,6 +51,80 @@ async function main() {
         ...(i ? [] : [language === "en" ? "Latest" : "最新版"])].join(" · ")));
       assert.deepEqual(await page.locator("#features li").allTextContents(), features[language]);
       assert((await page.locator("#history article").first().innerText()).includes(history[0][language]));
+      if (digitalCard) {
+        const playName = language === "en" ? "Play preview" : "播放预览";
+        assert(await page.getByRole("button", {name: playName}).isVisible());
+        const heading = language === "en" ? "Digital voice SD files" : "数字语音 SD 卡文件";
+        assert.equal(await page.locator("#digital-card-heading").innerText(), heading);
+        assert.equal(await page.locator("#install-title").innerText(),
+          language === "en" ? "Install on your IC-705" : "在 IC-705 上安装");
+        assert.equal(await page.locator("#install ol > li").count(), 4);
+        assert.deepEqual(await page.locator("#install .install-paths code").allTextContents(),
+          ["IC-705/705J140.dat", "IC-705/705E140.dat", "IC-705/DMRRX.BIN"]);
+        assert((await page.locator("#install").innerText()).includes("MENU → SD CARD → Firmware Update"));
+        assert((await page.locator("#install ol > li").last().innerText()).includes("DMR"));
+      }
+    }
+    if (digitalCard) {
+      const picker = page.locator("#demo-kind");
+      const screen = page.locator("#demo-screen");
+      const play = page.getByRole("button", {name: "播放预览"});
+      const stop = page.getByRole("button", {name: "停止预览"});
+      assert.equal(await picker.inputValue(), "digital");
+      for (const [kind, asset] of Object.entries({
+        digital: "digital-voice-v150", ftx: "ftx-v2-native", aprs: "aprs-v150", radio: "radio-demo",
+      })) {
+        await picker.selectOption(kind);
+        const cover = "images/" + asset + "-cover.png";
+        const gif = "images/" + asset + ".gif";
+        assert.equal(await screen.getAttribute("src"), cover);
+        assert(await page.locator("#" + kind + "-steps").isVisible());
+        await page.waitForFunction(() => document.querySelector("#demo-screen").complete
+          && document.querySelector("#demo-screen").naturalWidth === 480);
+        if (kind === "digital" && preview) {
+          await page.locator(".walkthrough").screenshot({path: path.join(preview, "demo-preview.png")});
+        }
+        if (kind === "ftx" && preview) {
+          await page.locator(".walkthrough").screenshot({path: path.join(preview, "ftx-v2-web-preview.png")});
+        }
+        await play.press("Enter");
+        await stop.waitFor();
+        assert.equal(await screen.getAttribute("src"), gif);
+        await page.waitForFunction(() => document.querySelector("#demo-screen").complete
+          && document.querySelector("#demo-screen").naturalWidth === 480);
+        demoAssets[kind] = gif;
+        await stop.click();
+        assert.equal(await screen.getAttribute("src"), cover);
+        await play.waitFor();
+      }
+      await picker.selectOption("digital");
+      await page.getByRole("link", {name: "安装说明与 SD 卡文件"}).click();
+      assert.equal(new URL(page.url()).hash, "#install");
+      await page.getByRole("link", {name: "查看更新日志"}).click();
+      assert.equal(new URL(page.url()).hash, "#release-history");
+      const [cardDownload] = await Promise.all([
+        page.waitForEvent("download"), page.locator("#digital-card").click(),
+      ]);
+      assert.equal(cardDownload.suggestedFilename(), "digital-voice-sd.zip");
+      const downloadedCard = fs.readFileSync(await cardDownload.path());
+      assert(downloadedCard.equals(digitalCard));
+      cardHash = digest(downloadedCard);
+
+      if (preview) {
+        await page.locator("#install").screenshot({path: path.join(preview, "install-preview.png")});
+      }
+      await page.setViewportSize({width: 360, height: 800});
+      for (const language of ["en", "zh"]) {
+        await page.locator("#" + language).click();
+        assert(await page.evaluate(() => document.documentElement.scrollWidth === window.innerWidth));
+        assert(await page.locator("#digital-card").isVisible());
+        const playName = language === "en" ? "Play preview" : "播放预览";
+        assert(await page.getByRole("button", {name: playName}).isVisible());
+      }
+      if (preview) {
+        await page.locator("#install").screenshot({path: path.join(preview, "install-mobile.png")});
+      }
+      await page.setViewportSize({width: 1280, height: 720});
     }
     const stock = fs.readFileSync(path.join(root,"firmware","705E140.dat"));
     const damaged = Buffer.from(stock);
@@ -80,8 +161,8 @@ async function main() {
     assert(downloaded.equals(fs.readFileSync(path.join(trial,"705E140.dat"))));
     await rejected("705E140.dat",damaged);
     assert.equal(await page.locator("#save").getAttribute("href"),null);
-    const digest = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
-    console.log(JSON.stringify({url,version:history[0].version,J140:digest(downloadedJ),E140:digest(downloaded)}));
+    console.log(JSON.stringify({url,version:history[0].version,J140:digest(downloadedJ),E140:digest(downloaded),
+      digitalVoiceSd:cardHash,demoAssets}));
   } finally {
     if (browser) await browser.close();
     server.close();

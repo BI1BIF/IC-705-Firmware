@@ -6,7 +6,10 @@
 enum { FRAME_MAX = 330, OUT_SLOTS = 4 };
 
 struct output_frame {
-    uint32_t end_sample;
+    union {
+        uint32_t end_sample;         /* Modem queue. */
+        uint32_t history_direction;  /* Receive record, 1..8 clockwise from north. */
+    };
     uint32_t length;
     uint8_t bytes[FRAME_MAX];
     uint16_t distance; /* Receive history only, uses the former tail padding. */

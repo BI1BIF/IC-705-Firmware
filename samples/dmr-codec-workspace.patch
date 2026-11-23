@@ -1,0 +1,49 @@
+--- a/src/ambe/ambe3600x2450.c
++++ b/src/ambe/ambe3600x2450.c
+@@ -991,7 +991,8 @@
+  */
+ static void
+ ambe2450_fade_out_last(float* aout_buf, const mbe_parms* cur_mp, const mbe_parms* prev_mp_enhanced, mbe_parms* faded) {
+-    mbe_parms last = *prev_mp_enhanced;
++    static mbe_parms last;
++    last = *prev_mp_enhanced;
+     *faded = *cur_mp;
+     mbe_repeat_load_model(faded, prev_mp_enhanced);
+     memset(faded->Ml, 0, sizeof(faded->Ml));
+@@ -1042,7 +1043,7 @@
+ ambe2450_mute(float* aout_buf, mbe_process_result* result, const struct ambe2450_snapshot* in, int own_model,
+               mbe_parms* cur_mp, mbe_parms* prev_mp_enhanced) {
+     const int fading = !in->held && !in->afresh && ambe2450_has_played(prev_mp_enhanced);
+-    mbe_parms faded;
++    static mbe_parms faded; /* One IC-705 decoder worker per module image. */
+
+     mbe_result_set_flag(result, MBE_PROCESS_FLAG_MUTE);
+     /* The noise goes straight to the output: a frame of noise alone is the
+@@ -1194,8 +1195,10 @@
+  * synthesis state where they stood. */
+ static void
+ ambe2450_speech_under_tone(float* speech, const mbe_parms* cur_mp, const mbe_parms* prev_mp_enhanced) {
+-    mbe_parms repeated = *cur_mp;
+-    mbe_parms last = *prev_mp_enhanced;
++    static mbe_parms repeated;
++    repeated = *cur_mp;
++    static mbe_parms last;
++    last = *prev_mp_enhanced;
+     mbe_repeat_load_model(&repeated, &last);
+     repeated.repeatCount = 0;
+     mbe_synthesizeRepeatedSpeechStartf(speech, &repeated, &last, MBE_VOICED_SYNTHESIS_DVSI, MBE_SYNTHESIS_CONTINUES,
+--- a/src/core/mbe_subframe.c
++++ b/src/core/mbe_subframe.c
+@@ -595,9 +595,9 @@
+ void
+ mbe_synthesize_subframes(float* aout_buf, mbe_parms* cur_mp, const mbe_parms* prev_mp, mbe_fft_plan* plan,
+                          float voiced_gain, int from_silence) {
+-    struct mbe_subframe_model models[3]; /* the last frame's own, mid-frame, this frame's own */
+-    struct rendered_model renders[3];
+-    struct mbe_unvoiced_subframe noise[2];
++    static struct mbe_subframe_model models[3]; /* the last frame's own, mid-frame, this frame's own */
++    static struct rendered_model renders[3];
++    static struct mbe_unvoiced_subframe noise[2];
+     struct pulse_train train;
+
+     if (!prepare_frame(cur_mp, prev_mp, from_silence, models, &train)) {

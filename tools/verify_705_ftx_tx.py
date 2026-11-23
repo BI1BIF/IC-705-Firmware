@@ -39,7 +39,7 @@ from tools.verify_705_ftx_rx import (
 
 def mount_station_card(cpu, sy, rom=lambda pc: pc, *, extra_paths=()):
     files, opened, pending, faults = {}, {}, [], {}
-    paths = {r"C:\IC-705\FTX0.CFG", r"C:\IC-705\FTX1.CFG", r"C:\IC-705\FTLOG.ADI"}
+    paths = {r"C:\IC-705\FTX0.CFG", r"C:\IC-705\FTX1.CFG", r"C:\IC-705\FTLOG.ADI", r"C:\IC-705\APRHIST.BIN"}
     paths.update(extra_paths)
     def operation(c, address, *_):
         a,b,n,d = (c.reg_read(reg) for reg in (
@@ -73,7 +73,9 @@ def mount_station_card(cpu, sy, rom=lambda pc: pc, *, extra_paths=()):
                     data=files[path][pos:pos+n]
                     if data:c.mem_write(b,data)
                 else:
-                    size=83 if n==320 and faults.pop("short",False) else n
+                    short_log=n==320 and faults.pop("short",False)
+                    short_aprs=path.endswith("APRHIST.BIN") and faults.pop("aprs-short",False)
+                    size=83 if short_log or short_aprs else n
                     data=bytes(c.mem_read(b,size))
                     files[path]=files[path][:pos]+data+files[path][pos+size:]
                 c.mem_write(d,pack("<I",len(data)))
@@ -91,14 +93,19 @@ def mount_station_card(cpu, sy, rom=lambda pc: pc, *, extra_paths=()):
     return files,pump,faults
 
 
-def replay(dat, ft4, *, e140=None):
+def replay(dat, ft4, *, e140=None, output=None, stock_rtc_offset=False):
     mode = "FT4" if ft4 else "FT8"
-    folder = (e140.folder if e140 else OUT) / mode
+    folder = (output or (e140.folder if e140 else OUT)) / mode
     folder.mkdir(parents=True, exist_ok=True)
     if e140:
         p, image = e140.station_guest(dat)
+        defaults = e140.stock
+        defaults_address = e140.defaults
     else:
-        p = SettingsGuest(load((ROOT / "firmware/705J140.dat").read_bytes()), front_panel=True)
+        stock = (ROOT / "firmware/705J140.dat").read_bytes()
+        p = SettingsGuest(load(stock), front_panel=True)
+        defaults = decode_main(stock)[1]
+        defaults_address = 0x20367B78
         image = bytes(decode_main(dat)[1])
         p.cpu.mem_write(BASE, image)
         p.cpu.ctl_remove_cache(BASE, BASE + len(image))
@@ -179,7 +186,9 @@ def replay(dat, ft4, *, e140=None):
     assert get("state") == 2 and get("ftx_ft4") == ft4 and "USB-D" in compose(p)[0]
     c.mem_write(0x203EAAC7, bytes([128]))
     c.mem_write(0x203EAAC8, bytes(2))
-    call(c, 0x200052ED, (0x20367B78 if e140 is None else e140.defaults) + 0x87C, 0x2038087C, 20)
+    # Cold boot expands these defaults. The source in the tested image may be compressed.
+    start = defaults_address + 0x87C - BASE
+    c.mem_write(0x2038087C, bytes(defaults[start:start+20]))
     feed_dsp_tx(c, False, rom(0x200D4A28))
     attr("enabled", 1)
     beeps = []
@@ -680,7 +689,10 @@ def replay(dat, ft4, *, e140=None):
     tap(440,104);request(False)
     # RTC UTC offset crosses the preceding day at midnight.
     c.mem_write(0x2038079A,bytes.fromhex("26010104003015"))
-    c.mem_write(sy["pref"]+22,bytes([4]))
+    if stock_rtc_offset:
+        c.mem_write(0x203eae88, pack("<h", 60))
+    else:
+        c.mem_write(sy["pref"]+22,bytes([4]))
     assert native("utc_stamp",logptr)==1 and bytes(c.mem_read(logptr,14))==b"20251231233015"
     from tools.verify_705_ftx_rx import gps,BYTE_RX,GPS_INIT,GPS_MODE
     c.mem_write(GPS_MODE,bytes([1]));call(c,rom(GPS_INIT))

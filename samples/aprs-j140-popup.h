@@ -60,6 +60,8 @@ void aprs_beacon_reschedule(void);
 void aprs_beacon_poll(void);
 #ifdef APRS_SLOT_UI
 enum { SMART_INTERVAL = 5 };
+void aprs_history_card_poll(unsigned mount);
+uint32_t aprs_card_checksum(const void *data, unsigned bytes);
 int aprs_geometry(const char *coords[4], unsigned packet, unsigned *metres, int *bearing);
 extern uint8_t aprs_beacon_ssid, aprs_tx_enabled, comment_saved, aprs_settings_dirty;
 extern char saved_comment[APRS_BEACON_COMMENT_MAX+1], saved_symbol[2];
@@ -113,8 +115,9 @@ struct popup_packet {
 #endif
 };
 enum { APRS_NO_DISTANCE = 0xffff };
-uint16_t aprs_packet_distance(const struct popup_packet *p);
+uint16_t aprs_packet_distance(const struct popup_packet *p, uint32_t *direction);
 void aprs_distance_text(char *out, uint16_t distance);
+void aprs_draw_direction(unsigned direction, unsigned x, unsigned y, uint16_t background);
 
 unsigned aprs_alert_class(const struct popup_packet *p, const uint8_t *frame, unsigned addresses, unsigned length);
 unsigned aprs_can_reply(const struct popup_packet *p);

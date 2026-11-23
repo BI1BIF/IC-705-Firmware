@@ -2,20 +2,38 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=4"><script type="module" src="converter/app.js?v=9"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=6"><script type="module" src="converter/app.js?v=11"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
-<p data-en="Select the original IC-705 1.40 DAT to build firmware with CW, SSTV, FT8/FT4 and APRS. Your file stays in this browser.">选择 IC-705 的 1.40 原厂 DAT，生成含 CW、SSTV、FT8／FT4 和 APRS 的固件。原厂文件只在浏览器内处理。</p>
+<p data-en="Select the original IC-705 1.40 DAT to build firmware with CW, SSTV, FT8/FT4, APRS and digital voice reception. Your file stays in this browser.">选择 IC-705 的 1.40 原厂 DAT，生成含 CW、SSTV、FT8／FT4、APRS 和数字语音接收的固件。原厂文件只在浏览器内处理。</p>
 <section class="walkthrough" aria-labelledby="demo-heading">
 <div><h2 id="demo-heading" data-en="Radio simulator walkthrough">电台模拟操作演示</h2>
 <label for="demo-kind" data-en="Walkthrough">演示内容</label>
-<select id="demo-kind"><option value="ftx">FT8 / FT4</option><option value="radio">CW / SSTV</option></select>
-<p id="ftx-steps" data-en="Open MODE → FT8/4. See the receive list, queue a CQ, follow transmission and view a completed contact in the log.">从 MODE → FT8/4 进入，查看十行收听页、CQ 待发与发射状态，再看已完成的通联日志。</p>
+<select id="demo-kind">
+  <option value="digital" data-en="Digital voice">数字语音</option>
+  <option value="ftx" data-en="FT8 / FT4 · Operating screen">FT8 / FT4 · 通联界面</option>
+  <option value="aprs">APRS</option>
+  <option value="radio">CW / SSTV</option>
+</select>
+<p id="digital-steps" data-en="In MODE, tap DV to cycle through DMR, C4FM and P25. The demo shows call information during reception.">在 MODE 里点按 DV 切换 DMR、C4FM 和 P25，查看接收时显示的来话信息。</p>
+<div id="ftx-steps" hidden>
+<p data-en="Open MODE → FT8/4. The receive list stays visible while you choose a caller and confirm or transmit the next message.">从 MODE → FT8/4 进入，查看守听与通联同屏，点选来叫、确认下一报或自动发射。</p>
+<p class="hint" data-en="Open Menu → Auto to set the operating mode, attempts and behavior after no answer.">在「菜单 → 自动选台」设置操作模式、发送次数和无应答处理。</p>
+</div>
+<p id="aprs-steps" hidden data-en="Open QUICK → APRS RX List to browse received packets and see their bearings, distances and message details.">从 QUICK → APRS RX List 查看接收记录、方位与距离，并打开位置或短消息详情。</p>
 <div id="radio-steps" hidden><p data-en="In CW mode, press MENU → KEYER → CW DECODE to see the receiver decode CQ.">在 CW 模式下，按 MENU → KEYER → CW DECODE，查看模拟接收信号译出的 CQ。</p>
-<p data-en="From the home screen, press MENU → page 2 → PICTURE → SSTV. Tap the RX preview to watch a Robot 36 image fill in.">从主界面按 MENU → 第 2 页 → PICTURE → SSTV，点 RX 预览，观看 Robot 36 图像逐行接收。</p></div>
-<button id="demo-toggle" aria-controls="demo-screen"><span id="demo-play" data-en="Play walkthrough">播放演示</span><span id="demo-stop" hidden data-en="Stop walkthrough">停止演示</span></button></div>
-<img id="demo-screen" src="images/ftx-tx2j-cover.png" width="480" height="304" alt="IC-705 LCD"></section>
+<p data-en="From the home screen, press MENU → page 2 → PICTURE → SSTV. The RX preview plays a Robot 36 receive sequence.">从主界面按 MENU → 第 2 页 → PICTURE → SSTV，查看 Robot 36 图像逐行接收。</p></div>
+</div>
+<button id="demo-toggle" type="button" aria-describedby="digital-steps">
+  <img id="demo-screen" src="images/digital-voice-v150-cover.png" width="480" height="304" alt="">
+  <span class="demo-control">
+    <span class="demo-icon" aria-hidden="true"></span>
+    <span id="demo-play" data-en="Play preview">播放预览</span>
+    <span id="demo-stop" hidden data-en="Stop preview">停止预览</span>
+  </span>
+</button>
+</section>
 <aside class="risk"><h2 data-en="Firmware risks and disclaimer">刷机风险与免责声明</h2>
 <p data-en="This is unofficial firmware. Read Icom’s terms before downloading or modifying its files. Flashing may erase settings or leave the radio unable to start. Back up your settings, check the model and region, and keep power stable.">这是非官方固件。下载或修改原厂文件前，请阅读 Icom 使用条款。刷写可能导致设置丢失或电台无法启动。请先备份设置，核对机型和地区，并确保供电稳定。</p>
 <p data-en="You decide whether to download, modify or flash the firmware and assume the associated risks. The project offers no warranty or repair service.">是否下载、修改和刷写由你自行决定，相关风险由你承担。本项目不提供保修或维修服务。</p>
@@ -29,9 +47,41 @@
 <a href="https://www.icom.co.jp/support/drivers/8603/" data-en="Get Japanese firmware 1.40 from Icom ↗">下载 Icom 日版 1.40 原厂固件 ↗</a> · <a href="https://www.icomjapan.com/support/firmware_driver/4422/" data-en="Get European/US firmware 1.40 from Icom ↗">下载 Icom 欧／美版 1.40 原厂固件 ↗</a>
 <p><button id="build" disabled data-en="Build and download">转换并下载</button></p><p id="status" role="status" aria-live="polite"></p>
 <a id="save" hidden download>手动保存</a>
-<p class="hint" id="sd-path" hidden><span data-en="Save the generated file on the SD card at">生成文件在 SD 卡上的保存路径为</span> <code id="output-path"></code></p></section>
+<p class="hint" id="sd-path" hidden><span data-en="Save the generated file on the SD card at">生成文件在 SD 卡上的保存路径为</span> <code id="output-path"></code></p>
+<p class="hint"><a href="#install" data-en="Installation and SD files">安装说明与 SD 卡文件</a> · <a href="#release-history" data-en="Release notes">查看更新日志</a></p></section>
+<section class="details install" id="install" aria-labelledby="install-title">
+<h2 id="install-title" data-en="Install on your IC-705">在 IC-705 上安装</h2>
+<ol>
+  <li>
+    <strong data-en="Copy the generated firmware to the microSD card">把转换好的固件复制到 microSD 卡</strong>
+    <p data-en="Use the DAT downloaded by the converter. Copy the file for your radio to the IC-705 folder at the root of the card, using the filename below.">使用转换页生成的 DAT，按电台地区复制到卡根目录下的 IC-705 文件夹，并核对文件名。</p>
+    <ul class="install-paths">
+      <li><span data-en="Japan (J140)">日版 J140</span> <code>IC-705/705J140.dat</code></li>
+      <li><span data-en="Europe / US (E140)">欧／美版 E140</span> <code>IC-705/705E140.dat</code></li>
+    </ul>
+  </li>
+  <li>
+    <strong id="digital-card-heading" data-en="Digital voice SD files">数字语音 SD 卡文件</strong>
+    <p data-en="For DMR, C4FM or P25 reception, use the ZIP below. Both regions use the same file. Extract the ZIP and copy the BIN to the same IC-705 folder. Replace any older BIN with the same name.">要使用 DMR、C4FM 或 P25 接收，请下载下方 ZIP，日版和欧／美版通用。解压后把 BIN 复制到同一个 IC-705 文件夹。如有同名旧文件，请用这一版覆盖。</p>
+    <ul class="install-paths">
+      <li><span data-en="Both regions">两区通用</span> <code>IC-705/DMRRX.BIN</code></li>
+    </ul>
+    <p><a id="digital-card" href="converter/digital-voice-sd.zip" download data-en="Download digital voice SD files (ZIP)">下载数字语音 SD 卡文件（ZIP）</a> · <a href="converter/digital-voice-source.zip" data-en="Digital voice sources and licenses">数字语音源码与许可</a></p>
+  </li>
+  <li>
+    <strong data-en="Run the firmware update">在电台上更新固件</strong>
+    <p><span data-en="Insert the card and open">插卡后，进入</span> <b>MENU → SD CARD → Firmware Update</b><span data-en=". Read the on-screen instructions, save a backup when prompted and select the DAT you copied. Hold Yes for about one second to begin. Keep power on and leave the card in until the radio restarts.">（日语界面为「SDカード → ファームアップ」）。按屏幕提示阅读注意事项并备份设置，然后选择刚复制的 DAT。长按确认约一秒开始更新，保持供电并留卡，等电台自动重启。</span></p>
+    <a href="https://www.icomjapan.com/support/firmware_driver/4422/" data-en="Icom firmware update instructions ↗">查看 Icom 原厂升级步骤 ↗</a>
+  </li>
+  <li>
+    <strong data-en="Select a digital voice mode">选择数字语音接收模式</strong>
+    <p data-en="After the restart, open MODE and tap DV repeatedly to select DMR, C4FM or P25. Leave the microSD card with DMRRX.BIN in the radio while using these modes.">重启后打开 MODE，连续点按 DV 切换到 DMR、C4FM 或 P25。使用这些模式时，请把装有 DMRRX.BIN 的卡留在机内。</p>
+    <p class="hint" data-en="If the radio shows Check SD card, verify the BIN path above, copy a fresh BIN from this release’s ZIP and select the mode again.">如果电台提示 Check SD card，请核对上面的 BIN 路径，从本版 ZIP 重新解压并复制，再进入接收模式。</p>
+  </li>
+</ol>
+</section>
 <section class="details"><h2 data-en="Current features">当前版本功能</h2><ul id="features"></ul></section>
-<section class="details"><h2 data-en="Release history">版本更新日志</h2><div id="history"></div>
+<section class="details" id="release-history"><h2 data-en="Release history">版本更新日志</h2><div id="history"></div>
 <a href="https://github.com/BI1BIF/IC-705-Firmware#previous-versions" data-en="Look up a previous build identifier ↗">查询旧版本号 ↗</a></section>
 <p><a href="converter/ftx-notices.txt" data-en="FT8/FT4 third-party notices">FT8／FT4 第三方许可</a> · <a href="https://github.com/BI1BIF/IC-705-Firmware/blob/main/docs/IC705_APRS.md" data-en="APRS guide and artwork credits (Chinese)">APRS 说明与图标署名</a></p>
 </main></body></html>

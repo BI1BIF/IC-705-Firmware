@@ -23,18 +23,20 @@ def run(region, test, folder=None):
     assert sha256(package).hexdigest()==report["sha256"]
     main,flash=load_a(package,report["main_sha256"])
     ms=symbols(folder/"manager.elf")
-    if test=="update":
+    if test in ("update","upgrade-v140"):
         from tools.build_705_aprs_rx_dat import install_and_boot
         stock=Path(f"firmware/705{region}140.dat").read_bytes()
-        original,stock_nor=load_a(stock,sha256(decode_main(stock)[1]).hexdigest())
+        prior=(Path(".analysis/aprs-hop/smart-final")/region/f"705{region}140.dat").read_bytes() if test=="upgrade-v140" else stock
+        original,stock_nor=load_a(prior,sha256(decode_main(prior)[1]).hexdigest())
         japan=decode_main(Path("firmware/705J140.dat").read_bytes())[1] if region=="E" else None
-        result=install_and_boot(stock,package,original,stock_nor,flash,main,ms,japan=japan)
-    elif test in ("panel","messages","default-comment","timer-baseline","timer-ptt-baseline","multi","lists","list-baseline","function","scope","scope-baseline"):
-        result=check_panel(region,folder,main,flash,ms,test=test)
+        result=install_and_boot(prior,package,original,stock_nor,flash,main,ms,japan=japan)
+    elif test in ("panel","popup-layout","messages","default-comment","timer-baseline","timer-ptt-baseline","multi","lists","list-baseline","function","scope","scope-baseline"):
+        app=main[:report.get("ft_previous_main_size")]
+        result=check_panel(region,folder,app,flash,ms,test=test)
     elif test=="dprs":
-        result=check_dprs(region,folder,main,ms)
+        result=check_dprs(region,folder,main[:report.get("ft_previous_main_size")],ms)
     else:
-        slot=FIRST if test in ("first","settings-boot","settings-smart") else SECOND
+        slot=FIRST if test in ("first","settings-boot","settings-smart","history-save","history-restore") else SECOND
         nor=bytearray(b"\xff"*NOR_BYTES)
         nor[:BOOT_SIZE]=flash[:BOOT_SIZE]
         at=slot-BOOT
@@ -49,7 +51,7 @@ def run(region, test, folder=None):
         class Done(Exception):
             pass
         def observe(cpu,frame):
-            result.update(check_home(cpu,frame,slot,region,folder,ms,report,settings=test if test.startswith("settings-") else None))
+            result.update(check_home(cpu,frame,slot,region,folder,ms,report,test=test))
             raise Done()
         if region=="E":
             from tools.replay_705_e140_home_heap import european_boot_replay
@@ -70,7 +72,7 @@ def run(region, test, folder=None):
     print(region,test,"passed",flush=True)
 
 
-def check_home(cpu,frame,slot,region,folder,ms,report,*,settings=False):
+def check_home(cpu,frame,slot,region,folder,ms,report,*,test):
     from tools.replay_705_aprs_fm import ax25_burst
     import tools.verify_705_aprs_overlay as overlay
     ft=symbols(FT_OUT/"rx.elf")
@@ -100,13 +102,13 @@ def check_home(cpu,frame,slot,region,folder,ms,report,*,settings=False):
     assert not word(ms["bound_hz"]) and not word(ms["loaded"])
     cpu.mem_write(0x203e2128,b"\x70\0")
     cpu.mem_write(0x20380714,pack("<I",FM_HZ))
-    if settings:
+    if test.startswith("settings-"):
         from tools.verify_705_ftx_tx import mount_station_card
         paths=[rf"C:\IC-705\APRS{i}.CFG" for i in range(2)]
         # Native GPS TX Mode is OFF after selecting APRS. Blank emulator EEPROM is 0xff.
         cpu.mem_write(0x20380172,bytes(1));tick()
         card,_,_=mount_station_card(cpu,ft,rom,extra_paths=paths)
-        smart=settings=="settings-smart"
+        smart=test=="settings-smart"
         source=folder/"default-comment" if smart else folder
         for i,path in enumerate(paths):
             card[path]=(source/f"APRS{i}.CFG").read_bytes()
@@ -133,6 +135,8 @@ def check_home(cpu,frame,slot,region,folder,ms,report,*,settings=False):
     assert base and word(base+sy["aprs_channel_hz"]-overlay.LINK)==FM_HZ, ("bound",hex(base),hex(word(ms["bound_hz"])),hex(word(ms["history_tail"])),hex(word(ms["history_last"])),word(ms["retry_pending"]))
     def entry(name):
         return base+sy[name]-overlay.LINK
+    if test.startswith("history-"):
+        return check_history_card(cpu,rom,slot,folder,ms,ft,entry,tick,invoke,word,test,int(report["history_prefix"],16))
     from tools.replay_705_gps_inputs import GPS_MODE
     cpu.mem_write(GPS_MODE,b"\x02")
     cpu.mem_write(0x203ea85d,pack(">BHcBHc",35,30000,b"N",139,30000,b"E"))
@@ -161,8 +165,8 @@ def check_home(cpu,frame,slot,region,folder,ms,report,*,settings=False):
                (word(entry("aprs_records")),22),(word(entry("aprs_history_last_bank")),64-report["prefix_slots"]-22)]
         return b"".join(bytes(cpu.mem_read(p,340*n)) for p,n in parts)
     saved_records=records()
-    assert all(unpack_from("<I",saved_records,i*340)==(i,) and
-               unpack_from("<H",saved_records,i*340+338)==(185,) for i in range(1,64))
+    assert all(unpack_from("<I",saved_records,i*340)==(1,) and
+               unpack_from("<H",saved_records,i*340+338)==(185,) for i in range(64))
     assert invoke(ms["pin_audio"],0)==base
     cpu.mem_write(ft["state"],pack("<I",2))
     assert tick()==base
@@ -188,6 +192,66 @@ def check_home(cpu,frame,slot,region,folder,ms,report,*,settings=False):
         held_until_audio_returned=True,
         preserved_distance_km=distance/100,
         both_sstv_canvas_requests=[hex(p) for p in canvases],idle_state_injected=True)
+
+
+def check_history_card(cpu,rom,slot,folder,ms,ft,entry,tick,invoke,word,test,prefix):
+    from tools.verify_705_ftx_tx import mount_station_card
+    path=r"C:\IC-705\APRHIST.BIN"
+    card,_,faults=mount_station_card(cpu,ft,rom,extra_paths=[rf"C:\IC-705\APRS{i}.CFG" for i in range(2)])
+    cpu.mem_write(0x203eb172,bytes(1))
+    if test=="history-save":
+        from tools.replay_705_gps_inputs import GPS_MODE
+        cpu.mem_write(GPS_MODE,b"\x02")
+        cpu.mem_write(0x203ea85d,pack(">BHcBHc",35,30000,b"N",139,30000,b"E"))
+        count=entry("aprs_record_count")
+        def receive(n):
+            src=bytes(c*2 for c in b"N0CARD")
+            freq=bytes(c*2 for c in b"APRS  ")
+            frame=freq+b"\x60"+src+b"\x61\x03\xf0"+f"!3531.00N/13930.00E>>card record {n:02d}".encode()+bytes(2)
+            seq=word(entry("aprs_rx_written"))
+            cpu.mem_write(entry("aprs_rx_frames")+340*(seq%4),pack("<II",n,len(frame))+frame)
+            cpu.mem_write(0x2038079a,bytes.fromhex("26112307152211"))
+            cpu.mem_write(entry("aprs_rx_written"),pack("<I",seq+1))
+            invoke(ms["aprs_slot_drain"])
+            assert word(count)==n
+            tick()
+        for n in range(1,68): receive(n)
+        # Keep one complete record in the older on-card format.
+        disk=bytearray(card[path])
+        old=23*512
+        disk[old+4:old+8]=pack("<I",0x12345678)
+        checksum=2166136261
+        for byte in disk[old:old+352]:
+            checksum=((checksum ^ byte)*16777619)&0xffffffff
+        disk[old+352:old+356]=pack("<I",checksum ^ 0x31585241)
+        complete=card[path]=bytes(disk)
+        assert len(complete)==65*512
+        (folder/"APRHIST.BIN").write_bytes(complete)
+        faults["aprs-short"]=True
+        receive(68)
+        torn=card[path]
+        assert torn!=complete and torn[512*2+83:]==complete[512*2+83:]
+        (folder/"APRHIST-torn.BIN").write_bytes(torn)
+        tick();assert card[path]==torn
+        cpu.mem_write(0x20381e08,pack("<I",word(0x20381e08)+5000))
+        tick();assert card[path]!=torn and word(entry("history_saved"))==68
+        return dict(wrote_records=67,card_bytes=len(complete),short_write_remained_pending=True,retried=True)
+    card[path]=(folder/("APRHIST-torn.BIN" if test=="history-recover" else "APRHIST.BIN")).read_bytes()
+    tick()
+    assert word(entry("aprs_record_count"))==64
+    assert not cpu.mem_read(entry("aprs_popup_owned"),1)[0]
+    assert word(entry("history_saved"))==64 and word(entry("card_sequence"))==67
+    frames=(bytes(cpu.mem_read(address,340*n)) for address,n in
+            ((word(ms["history_tail"]),22),(word(ms["history_last"]),22)))
+    tail=b"".join(frames)
+    assert b">card record 67" in tail[-340:] and b">card record 24" in tail[:340]
+    oldest=bytes(cpu.mem_read(prefix,340))
+    assert b">card record 04" in oldest
+    assert unpack_from("<I",oldest)==(1,) and unpack_from("<I",tail,len(tail)-340)==(1,)
+    assert unpack_from("<I",tail)==(0,) and unpack_from("<H",tail,338)==(185,)
+    assert bytes(cpu.mem_read(entry("arrival")+12*63+6,6))==bytes.fromhex("261123152211")
+    return dict(slot=hex(slot),restored=64,latest=67,first=4,saved_timestamp="2026-11-23 15:22:11",
+                recovered_direction=True,legacy_distance_without_direction=True,partial_write=test=="history-recover")
 
 
 def check_panel(region,folder,main,flash,ms,*,test="panel"):
@@ -276,6 +340,8 @@ def check_panel(region,folder,main,flash,ms,*,test="panel"):
     step=site+8+4*(((op&0xffffff)^0x800000)-0x800000)
     assert step==ms["aprs_slot_record"]
     info="!3531.00N/13930.00E>panel"
+    if test=="popup-layout":
+        cpu.mem_write(0x2038079a,bytes.fromhex("26112307152208"))
     wave=GUARD+ax25_burst(info+" bad",30,bad_fcs=True)+GUARD+ax25_burst(info,30)+GUARD
     wave+=(0,)*(-len(wave)%FRAMES)
     for i in range(0,len(wave),FRAMES):
@@ -286,6 +352,8 @@ def check_panel(region,folder,main,flash,ms,*,test="panel"):
     record=bytes(cpu.mem_read(sy["aprs_history_prefix"],340))
     assert word(count)==1 and b">panel" in record and b">panel bad" not in record
     assert unpack_from("<H",record,338)==(185,)
+    if test=="popup-layout":
+        return check_popup_layout(guest,folder,base,sy,ms)
     if test in ("lists","list-baseline"):
         from tools.replay_705_aprs_stations import exercise
         return exercise(guest,folder,base,sy,ms,baseline=test=="list-baseline")
@@ -308,6 +376,115 @@ def check_panel(region,folder,main,flash,ms,*,test="panel"):
                 native_confirm_tone=1,bound_hz=FM_HZ,
                 dma_frames=len(wave)//FRAMES,decoded_records=1,bad_fcs_rejected=True,
                 reception_distance_km=1.85,off_unloaded=True)
+
+
+def check_popup_layout(guest,folder,base,sy,ms):
+    from io import BytesIO
+    from PIL import Image
+    from tools.emulate_705 import call
+    from tools.render_705_stock_row import coverage
+    from tools.replay_705_dv_panel import attach_position_graphics
+    from tools.replay_705_gps_inputs import GPS_MODE
+    from tools.verify_705_aprs_overlay import LINK
+    cpu=guest.cpu
+    attach_position_graphics(guest)
+    def sym(name): return base+sy[name]-LINK
+    def addr(name,flags): return bytes(ch*2 for ch in name.ljust(6))+bytes([flags])
+    def receive(header,info,second):
+        frame=header+b"\x03\xf0"+info.encode()+bytes(2)
+        written=sym("aprs_rx_written")
+        seq=int.from_bytes(cpu.mem_read(written,4),"little")
+        cpu.mem_write(0x2038079a,bytes.fromhex(f"261123071522{second:02}"))
+        cpu.mem_write(sym("aprs_rx_frames")+340*(seq%4),pack("<II",seq,len(frame))+frame)
+        cpu.mem_write(written,pack("<I",seq+1))
+        call(cpu,ms["aprs_slot_drain"])
+    header=addr(b"WWWWWW",0x7e)+addr(b"WWWWWW",0x7e)
+    for i in range(8): header+=addr(b"WWWWWW",0xfe+(i==7))
+    route="WWWWWW-15>WWWWWW-15"+",WWWWWW-15"*8+"*"
+    comment="Walking north past the park. Second line and third line with lowercase descenders."
+    cpu.mem_write(sym("aprs_alert_styles"),bytes(7))
+    receive(addr(b"APRS",0x60)+addr(b"N0STAT",0x61),">No coordinates",8)
+    receive(addr(b"APRS",0x60)+addr(b"BI1BIF",0x73),"!3530.00N/13931.50E>Mobile",9)
+    receive(addr(b"APRS",0x60)+addr(b"BG1QGD",0x75),"!3528.00N/13930.00E&IGATE",10)
+    receive(header,"!3531.00N/13930.00Er"+comment,11)
+    prefix=sy["aprs_history_prefix"]
+    assert [int.from_bytes(cpu.mem_read(prefix+340*i,4),"little") for i in range(1,5)]==[0,3,5,1]
+    cpu.mem_write(GPS_MODE,b"\0")
+    guest._press_key(1,1);guest.render()
+    guest.click(150,55)
+    words,png=guest.render()
+    assert {"APRS RX List","WWWWWW-15","BG1QGD-10","BI1BIF-9","2026-11-23","1.85 km"}<=set(words),words
+    image=Image.open(BytesIO(png)).convert("RGB")
+    masks=[]
+    for i in range(4):
+        y=55+61*i
+        crop=image.crop((95,y,112,y+23))
+        masks.append(tuple(j for j,(r,g,b) in enumerate(crop.getdata()) if r>145 and g<85 and b<85))
+    assert len(set(masks[:3]))==3 and all(masks[:3]) and not masks[3],masks
+    (folder/"rx-list-layout.png").write_bytes(png)
+    cpu.mem_write(GPS_MODE,b"\x02")
+    spans=[]
+    entry=sym("label_span")
+    def capture(c,*_):
+        p,n,x,y=(c.reg_read(reg) for reg in (arm.UC_ARM_REG_R0,arm.UC_ARM_REG_R1,arm.UC_ARM_REG_R2,arm.UC_ARM_REG_R3))
+        spans.append((x,y,bytes(c.mem_read(p,n)).decode("latin1")))
+    def popup(*expected, reply=False):
+        spans.clear()
+        hook=cpu.hook_add(uc.UC_HOOK_CODE,capture,begin=entry,end=entry)
+        try:
+            guest.click(150,55)
+            words,png=guest.render()
+        finally:
+            cpu.hook_del(hook)
+        assert set(expected)<=set(words),words
+        lines=dict((y,text) for x,y,text in spans if x==14 and y>=204)
+        assert len(lines)>1 and "".join(lines[y] for y in sorted(lines))==route,(lines,spans)
+        # Check original glyph coverage against both control rectangles.
+        seen=set()
+        for event in guest.surface.events:
+            glyphs=event["glyphs"]
+            line="".join(chr(g["key"]) for g in glyphs).rstrip()
+            if line not in lines.values():
+                continue
+            seen.add(line)
+            for glyph in glyphs:
+                pixels=coverage(glyph["segments"],glyph["coordinates"],glyph["offset"],480,272)
+                for pixel in pixels:
+                    y,x=divmod(pixel,480)
+                    assert y<220 or x<335,(event["origin"],glyph)
+                    assert not reply or y<222 or x<240,(event["origin"],glyph)
+        assert seen==set(lines.values()),(seen,lines)
+        return png,len(lines)
+
+    png,rows=popup("POSITION BEACON","COMMENT","WWWWWW-15","1.85 km")
+    details=sorted({y for x,y,_ in spans if 109<=y<=205 and x in (133,225)})
+    assert len(details)>=5 and set(b-a for a,b in zip(details,details[1:]))=={19},spans
+    assert (165,82,"WWWWWW-15") in spans
+    position=Image.open(BytesIO(png)).convert("RGB")
+    rule=position.crop((67,52,415,53))
+    assert rule.getextrema()[0][0]>0
+    (folder/"popup-layout.png").write_bytes(png)
+    guest.press_exit();call(cpu,sym("aprs_update_panel"));guest.render()
+    guest.click(150,55+3*61)
+    words,status=guest.render()
+    assert {"APRS STATUS","No coordinates"}<=set(words),words
+    assert Image.open(BytesIO(status)).convert("RGB").crop((67,52,415,53)).tobytes()==rule.tobytes()
+    (folder/"status-layout.png").write_bytes(status)
+    for _ in range(2):
+        guest.press_exit();call(cpu,sym("aprs_update_panel"));guest.render()
+    call(cpu,ms["aprs_set_mode"],2)
+    cpu.mem_write(0x203e2499,b"N0HOME  ")
+    receive(header,":N0HOME   :Long path message{01",12)
+    guest._press_key(1,1);guest.render()
+    guest.click(150,55);guest.render()
+    msg,reply_rows=popup("APRS MESSAGE","Long path message","Reply",reply=True)
+    message=Image.open(BytesIO(msg)).convert("RGB")
+    assert message.crop((67,52,415,53)).tobytes()==rule.tobytes()
+    (folder/"reply-layout.png").write_bytes(msg)
+    return dict(route=route,raw_rows=rows,reply_raw_rows=reply_rows,detail_baselines=details,station_baseline=82,
+                return_and_reply_buttons_clear=True,shared_popup_divider=["position","message","status"],
+                list_arrows=["north","south","east",None],saved_bearing_used_with_gps_off=True,
+                rx_list="rx-list-layout.png")
 
 
 def check_multi(guest,folder,gps,base,sy):
@@ -413,7 +590,7 @@ def check_dprs(region,folder,main,ms):
 if __name__=="__main__":
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("region",choices=("J","E"))
-    p.add_argument("test",choices=("first","second","update","dprs","panel","messages","default-comment","timer-baseline","timer-ptt-baseline","multi","lists","list-baseline","function","scope","scope-baseline","settings-boot","settings-fallback","settings-smart"))
+    p.add_argument("test",choices=("first","second","update","upgrade-v140","dprs","panel","popup-layout","messages","default-comment","timer-baseline","timer-ptt-baseline","multi","lists","list-baseline","function","scope","scope-baseline","settings-boot","settings-fallback","settings-smart","history-save","history-restore","history-recover"))
     p.add_argument("--folder",type=Path)
     args=p.parse_args()
     run(args.region,args.test,args.folder)
