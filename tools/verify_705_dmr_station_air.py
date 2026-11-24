@@ -26,6 +26,14 @@ def playback_reference(pcm):
     magnitude=np.minimum(level,12288)*2+np.maximum(level-12288,0)//4
     return (np.sign(src)*magnitude).astype("<i2").tobytes()
 
+def speech_reference(pcm, gain2):
+    if not gain2:
+        return pcm
+    src=np.frombuffer(pcm,"<i2").astype(np.int32)
+    mag=np.abs(src)
+    boosted=np.minimum(mag*gain2//2,12288+mag//2)
+    return (np.sign(src)*boosted).astype("<i2").tobytes()
+
 def reference_alert(data, starts):
     samples=np.frombuffer(data,"<i2").astype(np.int32)
     sine=(0,1061,1500,1061,0,-1061,-1500,-1061)
@@ -368,6 +376,7 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
             previous=ROOT/".analysis/dmr-rx6-worker/final"/region/"dmr-received-field.wav"
             with wave.open(str(previous),"rb") as wav:
                 original=wav.readframes(wav.getnframes())
+            original=speech_reference(original,meta.get("speech_gain_halves",[0])[0])
             if has_alerts: original=reference_alert(original,[a for a,b in playback_runs])
             assert bytes(wire)==playback_reference(original)
             old=np.frombuffer(original,"<i2").astype(float)
@@ -376,6 +385,7 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
                              rms_gain_db=float(10*np.log10(np.sum(new**2)/np.sum(old**2))),
                              compressed_samples=int(np.count_nonzero(abs(old)>12288)))
     else:
+        reference=speech_reference(reference,meta.get("speech_gain_halves",[0])[0])
         if has_alerts: reference=reference_alert(reference,[0])
         if adjusted: reference=playback_reference(reference)
         assert bytes(captured)==reference

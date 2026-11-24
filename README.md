@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.5.2** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
+BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.5.3** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
 
-BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.5.2** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
+BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.5.3** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -38,6 +38,20 @@ Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed 
 补丁统一使用 **v主版本.功能版本.修订号**。重大升级递增第一位，新增功能递增第二位，修复递增第三位。日版 J140 和欧／美版 E140 的同一次更新共用一个版本号。
 
 Patch releases use **vMAJOR.MINOR.PATCH**. Major upgrades, new features and fixes increment the first, second and third numbers respectively. Regional builds of the same release share a version.
+
+**2026-11-24 · v1.5.3 · J140 / E140**
+
+YSF：改善失真信号的均衡与帧头纠错，修复部分 DN 通话断续的问题。
+
+常规 P25 Phase 1：修正链路控制和加密状态字段的纠错，解决部分明文通话无法正常播放的问题。
+
+数字语音：提高 YSF、P25 和 DMR 的语音播放电平，并压缩强峰。两区均通过录波回放，真机接收、扬声器听感和持续运行待复测。升级时请同时更换本版 SD 卡包里的 DMRRX.BIN。
+
+YSF: improved equalization and header error correction for distorted signals, fixing intermittent audio on some DN calls.
+
+Conventional P25 Phase 1: corrected error handling for link control and encryption status fields, restoring audio on some clear calls.
+
+Digital voice: raised speech playback levels for YSF, P25 and DMR and compressed loud peaks. Both regions passed recorded-signal replay. On-radio reception, speaker audio and sustained operation await a hardware retest. Replace DMRRX.BIN with the file in this release’s SD ZIP when upgrading.
 
 **2026-11-24 · v1.5.2 · J140 / E140**
 

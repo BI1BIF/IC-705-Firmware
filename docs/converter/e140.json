@@ -1,10 +1,10 @@
 {
-  "version": "v1.5.2",
+  "version": "v1.5.3",
   "size": 12279020,
   "stock": "132383f8388641d02d0fadaccf9878d01a1960fa77a028328f0eb33dcfbc147b",
-  "target": "21843a6d5fabf0876ef745a6ce94441efdbf70bceda8949ee846b755dad5c2c7",
-  "patch": "309d57ff0df34c5f5d0511626dccb712c770484594600d86344836bae4172be8.xor.gz",
-  "patchHash": "309d57ff0df34c5f5d0511626dccb712c770484594600d86344836bae4172be8",
+  "target": "9d4454d328213c7b4cb5636f7696c6a50f6746150094559701b089e7cd6ad894",
+  "patch": "8c867faa4af2ba712d1a86e501d9c880ed0e90a8d770865e117a500bc518e097.xor.gz",
+  "patchHash": "8c867faa4af2ba712d1a86e501d9c880ed0e90a8d770865e117a500bc518e097",
   "notes": {
     "features": {
       "zh": [
@@ -27,6 +27,16 @@
       ]
     },
     "history": [
+      {
+        "version": "v1.5.3",
+        "date": "2026-11-24",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "YSF：改善失真信号的均衡与帧头纠错，修复部分 DN 通话断续的问题。\n\n常规 P25 Phase 1：修正链路控制和加密状态字段的纠错，解决部分明文通话无法正常播放的问题。\n\n数字语音：提高 YSF、P25 和 DMR 的语音播放电平，并压缩强峰。两区均通过录波回放，真机接收、扬声器听感和持续运行待复测。升级时请同时更换本版 SD 卡包里的 DMRRX.BIN。",
+        "en": "YSF: improved equalization and header error correction for distorted signals, fixing intermittent audio on some DN calls.\n\nConventional P25 Phase 1: corrected error handling for link control and encryption status fields, restoring audio on some clear calls.\n\nDigital voice: raised speech playback levels for YSF, P25 and DMR and compressed loud peaks. Both regions passed recorded-signal replay. On-radio reception, speaker audio and sustained operation await a hardware retest. Replace DMRRX.BIN with the file in this release’s SD ZIP when upgrading."
+      },
       {
         "version": "v1.5.2",
         "date": "2026-11-24",

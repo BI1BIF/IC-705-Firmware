@@ -19,9 +19,12 @@ def check(package):
     expected_rows = set()
     expected_samples = 0
 
-    def append(nac, duid, word, row, *, damaged_nid=False):
+    def append(nac, duid, word, row, *, damaged_nid=False, rs_errors=0):
         nonlocal expected_samples
         control = gen.rs64_encode(gen.p25_hexbits(word), 12 if duid == 5 else 8)
+        for k in range(rs_errors):
+            # Corrupt a complete GF(64) symbol before the inner Hamming encoder.
+            control[(5*k+2)%24] ^= 1+k
         with patch.object(gen, "P25_NAC", nac):
             bits = gen.p25_ldu_bits(duid, control, rng, gen.p25_imbe_silent_bits())
         if damaged_nid:
@@ -40,9 +43,10 @@ def check(package):
     ):
         lc = bytes((fmt, mfid, 0)) + target.to_bytes(3, "big") + source.to_bytes(3, "big")
         label = "TO" if kind == "PVT" else "TG"
-        append(nac, 5, lc, f"{kind} NAC {nac:03X} ID {source} {label} {target}", damaged_nid=True)
-    append(0x737, 10, bytes(9) + bytes((0x80, 0, 0)), "NAC 737")
-    append(0x737, 10, bytes(9) + bytes((0x84, 0, 0)), None)
+        append(nac, 5, lc, f"{kind} NAC {nac:03X} ID {source} {label} {target}", damaged_nid=True, rs_errors=6)
+    append(0x737, 10, bytes(9) + bytes((0x80, 0, 0)), "NAC 737", rs_errors=4)
+    append(0x737, 10, bytes(9) + bytes((0x84, 0, 0)), None, rs_errors=4)
+    append(0x291, 10, bytes(9) + bytes((0x80, 0, 0)), None, rs_errors=5)
     append(0xA11, 5, bytes((3, 1, 64, 0, 0, 1, 0, 0, 2)), None)
     result = replay("p25-auto-calls", 3, np.concatenate(segments), package_dir=package)
     assert set(result["rows"]) == expected_rows and result["samples"] == expected_samples, result

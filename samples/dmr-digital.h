@@ -13,6 +13,7 @@ void digital_block(unsigned mode, const int16_t pcm[36]);
 void dmr_audio_reset(void);
 void digital_alert(unsigned kind);
 int dmr_audio_frame(const uint8_t voice[9]);
+int fusion_ambe_frame(const uint8_t voice[9]);
 int digital_imbe(const uint8_t *packed, int fusion);
 int digital_ambe(const char bits[49]);
 #endif

@@ -10,8 +10,9 @@ static struct {
     unsigned count, nid, equalized_nid, nac, phase, pending, protected_call, branch;
     float best, center, gain;
     uint16_t audio_signs[10];
-    unsigned audio_pending, audio_tick, audio_count, audio_next, frame_seen;
-    float audio_score, audio_scale, symbol_scale;
+    unsigned audio_pending, audio_tick, audio_count, audio_next, frame_seen, audio_profile;
+    float audio_score, audio_scale, symbol_scale, response_margin, response_history;
+    int8_t fich_levels[100];
     uint8_t dibits[864], equalized_dibits[864];
 } rx;
 
@@ -81,6 +82,66 @@ static unsigned gf_mul(unsigned a,unsigned b) {
     return r;
 }
 
+static unsigned gf_inverse(unsigned v) {
+    unsigned r=1;
+    for(unsigned power=62;power;power>>=1) {
+        if(power&1) r=gf_mul(r,v);
+        v=gf_mul(v,v);
+    }
+    return r;
+}
+
+static unsigned gf_eval(const unsigned *coeff,unsigned count,unsigned x) {
+    unsigned sum=0;
+    while(count) sum=gf_mul(sum,x)^coeff[--count];
+    return sum;
+}
+
+static unsigned syndromes(const unsigned word[24],unsigned *s,unsigned parity) {
+    unsigned root=1, bad=0;
+    for(unsigned k=0;k<parity;++k) {
+        root=gf_mul(root,2);
+        unsigned v=0;
+        for(unsigned j=0;j<24;++j) v=gf_mul(v,root)^word[j];
+        bad|=s[k]=v;
+    }
+    return bad;
+}
+
+/* Shortened GF(64) RS: Berlekamp-Massey locator and Forney magnitudes.
+   Accept corrected control bytes only after all syndromes are zero. */
+static int p25_rs(unsigned word[24],unsigned parity) {
+    unsigned s[12], loc[13]={1}, prev[13]={1}, degree=0, shift=1, scale=1;
+    if(!syndromes(word,s,parity)) return 1;
+    for(unsigned k=0;k<parity;++k) {
+        unsigned discrepancy=s[k];
+        for(unsigned j=1;j<=degree;++j) discrepancy^=gf_mul(loc[j],s[k-j]);
+        if(!discrepancy) { ++shift; continue; }
+        unsigned before[13], factor=gf_mul(discrepancy,gf_inverse(scale));
+        memcpy(before,loc,sizeof(loc));
+        for(unsigned j=shift;j<=parity;++j) loc[j]^=gf_mul(factor,prev[j-shift]);
+        if(2*degree<=k) {
+            degree=k+1-degree; memcpy(prev,before,sizeof(prev));
+            scale=discrepancy; shift=1;
+        } else ++shift;
+    }
+    if(!degree || degree>parity/2) return 0;
+    unsigned omega[6]={0}, derivative[6]={0};
+    for(unsigned i=0;i<degree;++i) {
+        for(unsigned j=0;j<=i;++j) omega[i]^=gf_mul(loc[j],s[i-j]);
+        if(!(i&1)) derivative[i]=loc[i+1];
+    }
+    unsigned roots=0, z=1, half=gf_inverse(2);
+    for(unsigned j=24;j;--j,z=gf_mul(z,half)) {
+        if(gf_eval(loc,degree+1,z)) continue;
+        unsigned den=gf_eval(derivative,degree,z);
+        if(!den) return 0;
+        word[j-1]^=gf_mul(gf_eval(omega,degree,z),gf_inverse(den));
+        ++roots;
+    }
+    return roots==degree && !syndromes(word,s,parity);
+}
+
 static int p25_control(const uint8_t *frame,unsigned duid,uint8_t bytes[12]) {
     static const unsigned starts[]={410,600,788,978,1168,1356};
     static const unsigned columns[]={14,13,11,7,3,12};
@@ -94,13 +155,7 @@ static int p25_control(const uint8_t *frame,unsigned duid,uint8_t bytes[12]) {
             symbols[4*j+k]=d;
         }
     }
-    unsigned parity=duid==5 ? 12 : 8, root=1;
-    for(unsigned i=0;i<parity;++i) {
-        root=gf_mul(root,2);
-        unsigned check=0;
-        for(unsigned j=0;j<24;++j) check=gf_mul(check,root)^symbols[j];
-        if(check) return 0;
-    }
+    if(!p25_rs(symbols,duid==5 ? 12 : 8)) return 0;
     for(unsigned i=0;i<16;++i)
         for(unsigned j=0;j<6;++j) {
             unsigned pos=i*6+j;
@@ -154,17 +209,21 @@ static void p25_frame(const uint8_t *frame,unsigned nid) {
 }
 
 /* Trace one predecessor bit per state at each K=5 trellis step. */
-static void viterbi(const uint8_t *air,unsigned steps,uint8_t *bits) {
+static void viterbi(const uint8_t *air,unsigned steps,uint8_t *bits,const int8_t *soft) {
     uint16_t trace[180], costs[16]={0}, next[16];
-    for(unsigned s=1;s<16;++s) costs[s]=1000;
+    for(unsigned s=1;s<16;++s) costs[s]=8192;
     unsigned depth=steps/20;
     for(unsigned i=0;i<steps;++i) {
-        unsigned dibit=air[(i%depth)*20+i/depth], decisions=0;
+        unsigned j=(i%depth)*20+i/depth, dibit=air[j], decisions=0, metric[4];
+        for(unsigned k=0;k<4;++k) {
+            static const int8_t level[]={4,12,-4,-12};
+            int error=soft ? soft[j]-level[k] : 0;
+            metric[k]=soft ? (unsigned)(error*error)/4 : __builtin_popcount(k^dibit);
+        }
         for(unsigned s=0;s<16;++s) {
             unsigned reg=s, prev=s>>1;
             unsigned pair=2*__builtin_parity(reg&25)+__builtin_parity(reg&23);
-            unsigned weight=__builtin_popcount(pair^dibit);
-            unsigned a=costs[prev]+weight, b=costs[prev+8]+2-weight;
+            unsigned a=costs[prev]+metric[pair], b=costs[prev+8]+metric[pair^3];
             if(b<a) decisions|=1u<<s;
             next[s]=a<b ? a : b;
         }
@@ -191,18 +250,37 @@ static unsigned golay(unsigned data) {
     unsigned word=(data<<11)|r;
     return (word<<1)|__builtin_parity(word);
 }
-static int fich(const uint8_t *frame,uint8_t *info) {
-    uint8_t bits[100];
-    viterbi(frame+20,100,bits);
-    for(unsigned k=0;k<4;++k) {
-        unsigned w=value(bits+24*k,24), data=w>>12;
-        /* Try the systematic word and one corrected information bit. */
-        unsigned i=0, d=data;
-        while(__builtin_popcount(golay(d)^w)>3) {
-            if(i==12) return 0;
-            d=data^(1u<<i++);
+/* Extended Golay has minimum distance eight. Search the systematic data
+   half for up to three errors and charge the remaining radius to parity. */
+static int golay_correct(unsigned word,unsigned *out) {
+    unsigned data=word>>12, syndrome=(golay(data)^word)&4095;
+    if(__builtin_popcount(syndrome)<=3) { *out=data; return 1; }
+    static const uint16_t columns[]={0x8eb,0x93e,0xa97,0xdc6,0x367,0x6cd,0xd99,0x3da,0x7b4,0xf68,0x63b,0xc75};
+    for(unsigned i=0;i<12;++i) {
+        unsigned one=syndrome^columns[i], a=data^(1u<<i);
+        if(__builtin_popcount(one)<=2) { *out=a; return 1; }
+        for(unsigned j=i+1;j<12;++j) {
+            unsigned two=one^columns[j], b=a^(1u<<j);
+            if(!(two&(two-1))) { *out=b; return 1; }
+            for(unsigned k=j+1;k<12;++k)
+                if(two==columns[k]) { *out=b^(1u<<k); return 1; }
         }
-        for(i=0;i<12;++i) info[k*12+i]=(d>>(11-i))&1;
+    }
+    return 0;
+}
+static int fich(const uint8_t *frame,uint8_t *info,const int8_t *soft) {
+    uint8_t bits[100];
+    int8_t sliced[100];
+    if(!soft && frame==rx.equalized_dibits) {
+        static const int8_t level[]={4,12,-4,-12};
+        for(unsigned i=0;i<100;++i) sliced[i]=level[frame[20+i]];
+        soft=sliced;
+    }
+    viterbi(frame+20,100,bits,soft);
+    for(unsigned k=0;k<4;++k) {
+        unsigned data;
+        if(!golay_correct(value(bits+24*k,24),&data)) return 0;
+        for(unsigned i=0;i<12;++i) info[k*12+i]=(data>>(11-i))&1;
     }
     return crc16(info,32)==value(info+32,16);
 }
@@ -216,7 +294,7 @@ static void unwhiten(uint8_t *bits,unsigned n) {
 static void callsign(const uint8_t *frame,unsigned width,unsigned offset) {
     uint8_t coded[180],bits[180]; unsigned steps=5*width;
     for(unsigned i=0;i<5;++i) memcpy(coded+i*width,frame+120+72*i,width);
-    viterbi(coded,steps,bits);
+    viterbi(coded,steps,bits,0);
     if(crc16(bits,steps-20)!=value(bits+steps-20,16)) return;
     unwhiten(bits,steps-20);
     char text[11]={0};
@@ -232,7 +310,7 @@ static void fusion_frame(const uint8_t *frame) {
     uint8_t info[48];
     /* The two symbol detectors may deliver the same 100 ms frame. */
     if(rx.frame_seen && rx.clock-rx.last_frame<2400) return;
-    if(!fich(frame,info)) return;
+    if(!fich(frame,info,0) && (frame!=rx.equalized_dibits || !fich(frame,info,rx.fich_levels))) return;
     rx.frame_seen=1;
     unsigned fi=value(info,2), cm=value(info+4,2), fn=value(info+10,3);
     unsigned ft=value(info+13,3), dt=value(info+22,2), dg=value(info+25,7);
@@ -262,7 +340,7 @@ static void fusion_frame(const uint8_t *frame) {
             unsigned count=dt==0 ? 72 : 144;
             pos+=144-count;
             for(unsigned j=0;j<count;++j) data[j/8]=(data[j/8]<<1)|airbit(frame,pos+j);
-            if(dt==0) dmr_audio_frame(data); else digital_imbe(data,1);
+            if(dt==0) fusion_ambe_frame(data); else digital_imbe(data,1);
         }
     }
 }
@@ -308,52 +386,104 @@ static void audio_sync(unsigned mode,unsigned index,unsigned phase) {
         -162,-162,-142,-107,-75,-67,-76,-90,-83,-35,52,146,195,161,60,-37,-73,-33,
         48,110,101,20,-83,-152,-157,-112,-55,-23,-21,-22,-10,15,33
     };
-    const int16_t *pulse=mode==RX_P25 ? p25_pulse : fusion_pulse;
+    static const int16_t alternate[2][51]={
+    {
+        19,-1,-57,-123,-161,-145,-72,32,128,181,173,110,22,-51,
+        -79,-54,3,54,68,40,-7,-34,-19,31,87,114,95,36,
+        -39,-102,-132,-123,-85,-45,-31,-54,-96,-119,-90,-8,95,169,
+        180,126,34,-56,-110,-112,-63,13,86
+    },
+    {
+        114,62,5,-42,-74,-87,-82,-58,-17,33,81,114,121,99,
+        54,-5,-61,-103,-120,-111,-81,-44,-16,-9,-24,-43,-43,-8,
+        55,117,142,111,37,-38,-71,-45,17,70,74,24,-49,-104,
+        -111,-78,-30,3,14,10,8,15,25
+    }
+    };
+    unsigned protocol=mode==RX_P25;
+    const int16_t *pulse=protocol ? p25_pulse : fusion_pulse;
     const int16_t *raw=rx.history[0];
     unsigned signs=(uint16_t)((rx.audio_signs[phase]<<1)|(raw[index]<raw[(index-6)&255]));
     rx.audio_signs[phase]=signs;
     if(rx.audio_count) return;
     if(rx.audio_pending && rx.clock-rx.audio_tick>6) return;
-    unsigned mask=mode==RX_P25 ? 0xffff : 0xfdff;
-    unsigned diff=(signs^(mode==RX_P25 ? 0x67ae : 0x6a72))&mask, inverse=diff^mask;
+    /* The two FM responses have the same sync epoch. Gate on common signs,
+       then use the higher normalized correlation to select the symbol filter. */
+    unsigned mask=protocol ? 0xfffd : 0xddff;
+    unsigned diff=(signs^(protocol ? 0x67ae : 0x6a72))&mask, inverse=diff^mask;
     diff&=diff-1; inverse&=inverse-1;
     if((diff&(diff-1)) && (inverse&(inverse-1))) return;
-    int dot=0, energy=0;
-    for(unsigned j=0;j<sizeof(fusion_pulse)/sizeof(*fusion_pulse);++j) {
+    int dot=0, other=0, energy=0;
+    for(unsigned j=0;j<51;++j) {
         unsigned at=index-150+3*j;
         int y=(raw[at&255]-raw[(at-6)&255])>>4;
         dot+=y*pulse[j];
+        other+=y*alternate[protocol][j];
         energy+=y*y;
     }
     if(energy<51) return;
-    const float norm=mode==RX_P25 ? 557748.0f : 455904.0f;
-    float score=(float)dot*dot/(norm*energy);
-    if(score<0.77f || (rx.audio_pending && score<=rx.audio_score)) return;
-    rx.audio_pending=1; rx.audio_tick=rx.clock; rx.audio_score=score;
+    float norm=protocol ? 557748.0f : 455904.0f;
+    float alternate_norm=protocol ? 248363.0f : 433350.0f;
+    float score=(float)dot*dot/(norm*energy), other_score=(float)other*other/(alternate_norm*energy);
+    float peak=score>other_score ? score : other_score;
+    if(peak<0.77f || (rx.audio_pending && peak<=rx.audio_score)) return;
+    float margin=other_score-score;
+    float history=rx.frame_seen ? rx.response_history : 0;
+    unsigned profile=0;
+    if(other_score>=0.77f && (score<0.77f || margin+history>0)) {
+        norm=alternate_norm; dot=other; profile=1+protocol;
+    }
+    rx.response_margin=margin;
+    rx.audio_pending=1; rx.audio_tick=rx.clock; rx.audio_score=peak; rx.audio_profile=profile;
     rx.audio_scale=norm/(2048.0f*dot);
 }
 
 static unsigned audio_dibit(unsigned index) {
     /* Feed-forward taps six samples apart, feedback taps oldest first, Q10. */
-    static const int16_t fir[]={192,-279,375,-178,1,175,-103,-19,98,-143,
-        -95,100,-277,-282,237,-333,-646,580,152,-1229,875,2605,-891,-3088,1349};
-    static const int16_t feedback[]={-5,-32,-64,-87,-112,-49,-2,228,296,663};
+    static const int16_t fir[3][29]={{192,-279,375,-178,1,175,-103,-19,98,-143,
+        -95,100,-277,-282,237,-333,-646,580,152,-1229,875,2605,-891,-3088,1349},
+    {
+        130,-79,118,73,51,132,111,85,150,133,88,155,
+        125,-22,67,151,-189,-209,212,-275,-647,442,192,-1167,
+        692,2719,-239,-2868,859
+    },
+    {
+        166,-209,1115,-376,638,3435,369,-4326,-2726,1132,1620,866,946,747,
+        130,-285,-469,-455,-253,128,416,409,281,-414,-6
+    }
+    };
+    static const int16_t feedback[3][10]={{-5,-32,-64,-87,-112,-49,-2,228,296,663},
+    {
+        -1,-24,-66,-96,-116,-64,-6,244,357,632
+    },
+    {
+        -150,-54,332,393,73,-559,-639,-350,989,955
+    }
+    };
     static const int8_t levels[]={1,3,-1,-3};
     int signal=0, correction=0;
-    for(unsigned j=0;j<25;++j) signal+=fir[j]*rx.history[0][(index-6*j)&255];
-    for(unsigned j=0;j<10;++j) correction+=feedback[j]*levels[rx.equalized_dibits[rx.audio_count-10+j]];
+    unsigned taps=rx.audio_profile==1 ? 29 : 25;
+    for(unsigned j=0;j<taps;++j) signal+=fir[rx.audio_profile][j]*rx.history[0][(index-6*j)&255];
+    for(unsigned j=0;j<10;++j) correction+=feedback[rx.audio_profile][j]*levels[rx.equalized_dibits[rx.audio_count-10+j]];
     float v=signal*rx.symbol_scale+correction;
+    if(rx.audio_count>=20 && rx.audio_count<120) {
+        int soft=(int)(v/256.0f);
+        rx.fich_levels[rx.audio_count-20]=soft< -24 ? -24 : soft>24 ? 24 : soft;
+    }
     return (v<0 ? 2 : 0)+(v>2048 || v< -2048);
 }
 
 static void audio_sample(unsigned mode,unsigned index,unsigned phase,unsigned n) {
     audio_sync(mode,index,phase);
-    if(rx.audio_pending && rx.clock-rx.audio_tick==(mode==RX_P25 ? 150u : 140u)) {
+    static const unsigned delay[]={0,165u,55u};
+    unsigned wait=rx.audio_profile ? delay[rx.audio_profile] : (mode==RX_P25 ? 150u : 140u);
+    if(rx.audio_pending && rx.clock-rx.audio_tick==wait) {
         /* The last ten known sync dibits seed decision feedback. */
         static const uint8_t tail[]={2,1,1,2,0,3,1,0,3,1};
         static const uint8_t p25_tail[]={3,3,1,3,1,3,3,3,3,3};
         memcpy(rx.equalized_dibits+n-10,mode==RX_P25 ? p25_tail : tail,10);
         rx.audio_pending=0; rx.audio_count=n;
+        rx.response_history=(rx.frame_seen ? 0.94f*rx.response_history : 0)+rx.response_margin;
         rx.symbol_scale=rx.audio_scale; rx.audio_next=rx.clock;
     }
     if(rx.audio_count && rx.clock==rx.audio_next) {

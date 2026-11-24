@@ -28,12 +28,18 @@ void digital_alert(unsigned kind) {
     tone_length=tone_left=kind && kind<=3 ? (kind-1)*480+280 : 0;
 }
 
-static int publish(const int16_t pcm[160], int status) {
+/* Speech gain in half units. Keep strong peaks below full scale and mix the
+   existing call alert afterwards so its volume is independent of speech. */
+static int publish(const int16_t pcm[160], int status, unsigned gain2) {
     unsigned start=__atomic_load_n(&produced,__ATOMIC_RELAXED);
     if (status<0 || start-__atomic_load_n(&consumed,__ATOMIC_ACQUIRE)>PCM_CAPACITY-160)
         return -1;
     for (unsigned i=0;i<160;++i) {
-        int v=pcm[i];
+        int magnitude=pcm[i]<0 ? -(int)pcm[i] : pcm[i];
+        int boosted=magnitude*(int)gain2/2;
+        int ceiling=12288+magnitude/2;
+        if(boosted>ceiling) boosted=ceiling;
+        int v=pcm[i]<0 ? -boosted : boosted;
         if (tone_left) {
             unsigned t=(tone_length-tone_left--)%480;
             if (t<280) {
@@ -49,7 +55,7 @@ static int publish(const int16_t pcm[160], int status) {
 }
 
 /* One worker publishes whole 20 ms frames. -1 means retry when space returns. */
-int dmr_audio_frame(const uint8_t voice[9]) {
+static int ambe_fec_frame(const uint8_t voice[9], unsigned gain2) {
     uint32_t start = __atomic_load_n(&produced, __ATOMIC_RELAXED);
     if (start - __atomic_load_n(&consumed, __ATOMIC_ACQUIRE) > PCM_CAPACITY - 160)
         return -1;
@@ -57,13 +63,16 @@ int dmr_audio_frame(const uint8_t voice[9]) {
     int16_t pcm[160];
     deinterleave(voice, 36, dmr_row_high, dmr_col_high, dmr_row_low, dmr_col_low, &plane[0][0], 24);
     int status = mbe_processAmbe3600x2450Frame(pcm, NULL, plane, bits, &current, &previous, &enhanced);
-    return publish(pcm,status);
+    return publish(pcm,status,gain2);
 }
+
+int dmr_audio_frame(const uint8_t voice[9]) { return ambe_fec_frame(voice,3); }
+int fusion_ambe_frame(const uint8_t voice[9]) { return ambe_fec_frame(voice,8); }
 
 int digital_ambe(const char bits[49]) {
     int16_t pcm[160];
     int status=mbe_processAmbe2450Data(pcm,NULL,bits,&current,&previous,&enhanced);
-    return publish(pcm,status);
+    return publish(pcm,status,8);
 }
 
 int digital_imbe(const uint8_t *packed, int fusion) {
@@ -80,7 +89,7 @@ int digital_imbe(const uint8_t *packed, int fusion) {
         }
     } else deinterleave(packed,72,p25_row_high,p25_col_high,p25_row_low,p25_col_low,&plane[0][0],23);
     int status=mbe_processImbe7200x4400Frame(pcm,NULL,plane,bits,&current,&previous,&enhanced);
-    return publish(pcm,status);
+    return publish(pcm,status,fusion ? 8 : 4);
 }
 
 /* The DMA callback must prefer native playback and check its mode is RX first.
