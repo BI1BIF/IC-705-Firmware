@@ -26,7 +26,8 @@
 .pixelmode{margin:0 0 8px;display:flex;align-items:center;gap:10px;color:#435863;font-size:13px}
 .pixelmode button{background:white;border:1px solid #acbcc3;border-radius:4px;color:#214455;padding:4px 8px;cursor:pointer}
 @media(max-width:550px){.case.zoom{width:100%}}
-.row.offer{background:#193d33;box-shadow:inset 2px 0 #9ceebb}.row.offer .msg{color:#aeffd2}
+.row.offer{background:#193d33;box-shadow:inset 2px 0 #9ceebb}
+.row.mine .msg{color:#61f7a3}
 .cols{grid-template-columns:10px 16px 176px 63px 27px 39px 40px;gap:3px}
 .row img{width:16px;height:12px}.row.sep{border-top:0}.row:has(+.row.sep){border-bottom-color:#38b2e5}
 .hdr{padding-top:2px}.hdr .slothead{min-width:0;height:16px;overflow:hidden;gap:4px}
@@ -79,7 +80,7 @@ const stations = [
   ["K1ABC","FN42","us","美国",-17,831,10822],["G4ABC","IO91","gb","英国",-18,1438,8180]
 ].map(([call,loc,flag,qth,db,hz,km])=>({call,loc,flag,qth,db,hz,km}));
 const examples = [
-  ["本机叫 CQ","点右上「呼叫 CQ」，逐隙看本台叫出、对方来叫和下一报。"],
+  ["本机叫 CQ","亮绿色报文表示对方在呼叫本台。点这一行可应答，也可点「呼叫 CQ」体验主动呼叫。"],
   ["点选追台","点一条最新 CQ，再按「应答」。点另一行可以查看，当前通联始终锁定同一台。"],
   ["无应答换台","点「启动自动」。首呼连续两次无应答后，当天跳过该台，继续选台。"],
   ["手动交换","选一条最新 CQ 并按「应答」。每次收到对方报告后，自己确认下一报。"],
@@ -114,6 +115,10 @@ function reset(i,restore=false){
  }catch{}}
  $("#response").value=i===2||i===5?"no":i===4?"multi":"yes";
  for(let n=-9;n<0;n++)traffic(n);
+ if(i===0){
+   const caller=stations.find(p=>p.call!==me&&!st.rows.some(r=>r.n===-1&&r.p.call===p.call));
+   if(caller)add(-1,caller,me,caller.loc);
+ }
  log("已进入实时守听");draw();
 }
 function add(n,p,to,extra){
@@ -125,10 +130,11 @@ function traffic(n,quiet=[]){
  const p=stations[3+Math.abs(n)%3];if(!quiet.includes(p.call))add(n,p,"W1XYZ",Math.abs(n)%2?"73":"R-12");
 }
 const lastRow=p=>st.rows.findLast(r=>r.p.call===p.call);
+const report=db=>(db<0?"-":"+")+String(Math.abs(db)).padStart(2,"0");
 function firstMessage(r){
  if(!r||r.to!==me)return grid;
- if(/^[+-]\d{2}$/.test(r.extra))return "R"+r.p.db;
- return /^[A-R]{2}\d{2}$/.test(r.extra)&&r.extra!=="RR73"?String(r.p.db):null
+ if(/^[+-]\d{2}$/.test(r.extra))return "R"+report(r.p.db);
+ return /^[A-R]{2}\d{2}$/.test(r.extra)&&r.extra!=="RR73"?report(r.p.db):null
 }
 function canReply(r){return r && st.slot-r.n<=2 && lastRow(r.p).id===r.id && (r.to==="CQ"||(r.to===me?firstMessage(r)!==null:["73","RR73"].includes(r.extra)))}
 function ranked(rows){return [...rows].sort((a,b)=>{
@@ -179,7 +185,7 @@ function afterQso(completed){
  st.ended="等新候选";findPeer()
 }
 function acceptCaller(q,r){
- q.p=r.p;q.extra=String(r.p.db);q.tries=0;q.callers=null;q.missedPeer="";
+ q.p=r.p;q.extra=report(r.p.db);q.tries=0;q.callers=null;q.missedPeer="";
  q.phase=st.mode===0?"confirm":"queued";
  log("接 "+r.p.call+"，下一报 "+q.extra);
 }
@@ -205,7 +211,7 @@ function processReply(q,n){
  }else{
    const reply=q.extra===grid?"-09":q.extra.startsWith("R")?"RR73":"R-09";
    add(n,q.p,me,reply);
-   q.extra=reply==="RR73"?"73":reply==="R-09"?"RR73":"R"+q.p.db;
+   q.extra=reply==="RR73"?"73":reply==="R-09"?"RR73":"R"+report(q.p.db);
  }
  q.tries=0;q.phase=st.mode===0?"confirm":"queued";log(q.p.call+" 已应答，下一报 "+q.extra);return true;
 }
@@ -273,6 +279,7 @@ function list(pane){
    const offered=!st.history&&st.q?.phase==="pick"&&st.q.callers.some(c=>c.id===r.id);
    const el=button("",()=>{if(offered){pickCaller(st.q,r);return}if(st.q||st.armed||st.history)st.peek=st.peek?.id===r.id?null:r;
      else{st.selected=st.selected?.id===r.id?null:r;st.ended=""}draw()},"row cols"+(offered?" offer":"")+(active?" sel":"")+(i&&show[i-1].n!==r.n?" sep":"")+(r.to===me?" mine":""));
+   if(r.to===me)el.setAttribute("aria-description","呼叫本台 "+me);
    el.append(node("span",parity(r.n)));const flag=node("img");if(assets[r.p.flag])flag.src=assets[r.p.flag];flag.alt="";el.append(flag);
    const msg=node("span",undefined,"msg");msg.append(r.to+" ",node(st.worked.has(r.p.call)?"s":"span",r.p.call)," "+r.extra);el.append(msg);
    el.append(node("span",r.p.qth,"place"));for(const v of [r.p.db,r.p.hz,r.p.km??"–"])el.append(node("span",v,"num"));
