@@ -6,8 +6,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>APRS 模拟操作 · IC-705</title>
   <link rel="stylesheet" href="converter/style.css">
-  <link rel="stylesheet" href="converter/aprs-sim.css">
-  <script type="module" src="converter/aprs-sim.js"></script>
+  <link rel="stylesheet" href="converter/aprs-sim.css?v=3">
+  <script type="module" src="converter/aprs-sim.js?v=3"></script>
 </head>
 <body class="aprs-sim">
   <header><div class="bar">
@@ -19,38 +19,35 @@
     <p data-en="Choose a sample packet, or use QUICK → APRS RX List to review reception history.">选择一种报文体验接收弹窗，或按 QUICK → APRS RX List 查看收包记录。</p>
     <div class="sim-grid">
       <div class="panel">
-        <div class="lcd" lang="en">
-          <div class="radio-status">
-            <span><b>FM</b> <b>APRS</b> <b>BCN</b></span>
-            <span>144.640 <small>MHz</small></span>
-          </div>
-          <div id="screen" tabindex="-1"></div>
+        <div class="lcd" id="display" lang="en">
+          <canvas id="screen" width="480" height="272" aria-label="IC-705 LCD"></canvas>
+          <div id="controls"></div>
         </div>
         <div class="panel-keys">
-          <button type="button" data-action="quick" aria-controls="screen">QUICK</button>
-          <button type="button" data-action="exit" aria-controls="screen">EXIT</button>
+          <button type="button" disabled data-action="quick" aria-controls="screen">QUICK</button>
+          <button type="button" disabled data-action="exit" aria-controls="screen">EXIT</button>
         </div>
       </div>
       <section class="sample-panel" aria-labelledby="sample-title">
         <h2 id="sample-title" data-en="Simulate reception">模拟收包</h2>
         <div class="sample-buttons">
-          <button type="button" data-action="receive:position" data-en="Position beacon">位置信标</button>
-          <button type="button" data-action="receive:weather" data-en="Weather">气象</button>
-          <button type="button" data-action="receive:message" data-en="Direct message">短消息</button>
-          <button type="button" data-action="receive:status" data-en="Status">状态报文</button>
-          <button type="button" data-action="receive:igate" data-en="IGate">网关</button>
-          <button type="button" data-action="receive:relayed" data-en="Own beacon relayed">自台信标被转发</button>
+          <button type="button" disabled data-action="receive:position" data-en="Position beacon">位置信标</button>
+          <button type="button" disabled data-action="receive:weather" data-en="Weather">气象</button>
+          <button type="button" disabled data-action="receive:message" data-en="Direct message">短消息</button>
+          <button type="button" disabled data-action="receive:status" data-en="Status">状态报文</button>
+          <button type="button" disabled data-action="receive:igate" data-en="IGate">网关</button>
+          <button type="button" disabled data-action="receive:relayed" data-en="Own beacon relayed">自台信标被转发</button>
         </div>
         <label for="position-source" data-en="Local position">本机位置</label>
-        <select id="position-source">
+        <select disabled id="position-source">
           <option value="MANUAL" data-en="Manual">手动位置</option>
           <option value="GPS">GPS</option>
           <option value="NO FIX" data-en="No fix">无定位</option>
         </select>
-        <p data-en="Sample data only. All sends are simulated in this browser.">使用演示报文，发射也在浏览器内模拟。</p>
+        <p data-en="480 × 272 firmware screen replay. Packets and transmissions are simulated.">画面取自 480 × 272 固件台架。收包与发射均使用本页的演示数据。</p>
       </section>
     </div>
-    <p id="announcement" class="sim-sr-only" role="status"></p>
+    <p id="load-error" role="alert"></p><p id="announcement" class="sim-sr-only" role="status"></p>
   </main>
 </body>
 </html>
