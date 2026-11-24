@@ -72,7 +72,7 @@ async function main() {
       const stop = page.getByRole("button", {name: "停止预览"});
       assert.equal(await picker.inputValue(), "digital");
       for (const [kind, asset] of Object.entries({
-        digital: "digital-voice-v150", ftx: "ftx-v2-native", aprs: "aprs-v150", radio: "radio-demo",
+        digital: "digital-voice-v152", ftx: "ftx-v2-native", aprs: "aprs-v150", radio: "radio-demo",
       })) {
         await picker.selectOption(kind);
         const cover = "images/" + asset + "-cover.png";

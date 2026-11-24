@@ -108,8 +108,10 @@ void dmr_core_status(volatile struct dmr_ui_status *s)
                 p=append(p,"CC "); p=number(p,s->color_code,10,1);
                 if(r->family==3 || r->family==4) { p=append(p," TS "); p=number(p,r->family-2,10,1); }
             }
-            p=append(p," ID "); p=number(p,s->source_id,10,1);
-            p=append(p,kind==CALL_PRIVATE ? " TO " : " TG "); p=number(p,s->talkgroup,10,1);
+            if(s->source_id!=UINT32_MAX) { p=append(p," ID "); p=number(p,s->source_id,10,1); }
+            if(s->talkgroup!=UINT32_MAX) {
+                p=append(p,kind==CALL_PRIVATE ? " TO " : " TG "); p=number(p,s->talkgroup,10,1);
+            }
         }
     }
     *p=0;

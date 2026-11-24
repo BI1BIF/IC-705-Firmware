@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=6"><script type="module" src="converter/app.js?v=11"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=6"><script type="module" src="converter/app.js?v=12"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
@@ -16,7 +16,7 @@
   <option value="aprs">APRS</option>
   <option value="radio">CW / SSTV</option>
 </select>
-<p id="digital-steps" data-en="In MODE, tap DV to cycle through DMR, C4FM and P25. The demo shows call information during reception.">在 MODE 里点按 DV 切换 DMR、C4FM 和 P25，查看接收时显示的来话信息。</p>
+<p id="digital-steps" data-en="In MODE, tap DV to cycle through DMR, YSF and P25. The demo shows call information during reception.">在 MODE 里点按 DV 切换 DMR、YSF 和 P25，查看接收时显示的来话信息。</p>
 <div id="ftx-steps" hidden>
 <p data-en="Open MODE → FT8/4. The receive list stays visible while you choose a caller and confirm or transmit the next message.">从 MODE → FT8/4 进入，查看守听与通联同屏，点选来叫、确认下一报或自动发射。</p>
 <p class="hint" data-en="Open Menu → Auto to set the operating mode, attempts and behavior after no answer.">在「菜单 → 自动选台」设置操作模式、发送次数和无应答处理。</p>
@@ -26,7 +26,7 @@
 <p data-en="From the home screen, press MENU → page 2 → PICTURE → SSTV. The RX preview plays a Robot 36 receive sequence.">从主界面按 MENU → 第 2 页 → PICTURE → SSTV，查看 Robot 36 图像逐行接收。</p></div>
 </div>
 <button id="demo-toggle" type="button" aria-describedby="digital-steps">
-  <img id="demo-screen" src="images/digital-voice-v150-cover.png" width="480" height="304" alt="">
+  <img id="demo-screen" src="images/digital-voice-v152-cover.png" width="480" height="304" alt="">
   <span class="demo-control">
     <span class="demo-icon" aria-hidden="true"></span>
     <span id="demo-play" data-en="Play preview">播放预览</span>
@@ -62,11 +62,11 @@
   </li>
   <li>
     <strong id="digital-card-heading" data-en="Digital voice SD files">数字语音 SD 卡文件</strong>
-    <p data-en="For DMR, C4FM or P25 reception, use the ZIP below. Both regions use the same file. Extract the ZIP and copy the BIN to the same IC-705 folder. Replace any older BIN with the same name.">要使用 DMR、C4FM 或 P25 接收，请下载下方 ZIP，日版和欧／美版通用。解压后把 BIN 复制到同一个 IC-705 文件夹。如有同名旧文件，请用这一版覆盖。</p>
+    <p data-en="For DMR, YSF or P25 reception, use the ZIP below. Both regions use the same file. Extract the ZIP and copy the BIN to the same IC-705 folder. Replace any older BIN with the same name.">要使用 DMR、YSF 或 P25 接收，请下载下方 ZIP，日版和欧／美版通用。解压后把 BIN 复制到同一个 IC-705 文件夹。如有同名旧文件，请用这一版覆盖。</p>
     <ul class="install-paths">
       <li><span data-en="Both regions">两区通用</span> <code>IC-705/DMRRX.BIN</code></li>
     </ul>
-    <p><a id="digital-card" href="converter/digital-voice-sd.zip?v=v1.5.1" download data-en="Download digital voice SD files (ZIP)">下载数字语音 SD 卡文件（ZIP）</a> · <a href="converter/digital-voice-source.zip?v=v1.5.1" data-en="Digital voice sources and licenses">数字语音源码与许可</a></p>
+    <p><a id="digital-card" href="converter/digital-voice-sd.zip?v=v1.5.2" download data-en="Download digital voice SD files (ZIP)">下载数字语音 SD 卡文件（ZIP）</a> · <a href="converter/digital-voice-source.zip?v=v1.5.2" data-en="Digital voice sources and licenses">数字语音源码与许可</a></p>
   </li>
   <li>
     <strong data-en="Run the firmware update">在电台上更新固件</strong>
@@ -75,7 +75,7 @@
   </li>
   <li>
     <strong data-en="Select a digital voice mode">选择数字语音接收模式</strong>
-    <p data-en="After the restart, open MODE and tap DV repeatedly to select DMR, C4FM or P25. Leave the microSD card with DMRRX.BIN in the radio while using these modes.">重启后打开 MODE，连续点按 DV 切换到 DMR、C4FM 或 P25。使用这些模式时，请把装有 DMRRX.BIN 的卡留在机内。</p>
+    <p data-en="After the restart, open MODE and tap DV repeatedly to select DMR, YSF or P25. Leave the microSD card with DMRRX.BIN in the radio while using these modes.">重启后打开 MODE，连续点按 DV 切换到 DMR、YSF 或 P25。使用这些模式时，请把装有 DMRRX.BIN 的卡留在机内。</p>
     <p class="hint" data-en="If the radio shows Check SD card, verify the BIN path above, copy a fresh BIN from this release’s ZIP and select the mode again.">如果电台提示 Check SD card，请核对上面的 BIN 路径，从本版 ZIP 重新解压并复制，再进入接收模式。</p>
   </li>
 </ol>

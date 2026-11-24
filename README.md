@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.5.1** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
+BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.5.2** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
 
-BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.5.1** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
+BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.5.2** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -21,7 +21,7 @@ This project’s IC-705 patches are available free of charge on the project webs
 | SSTV TX | 从 SD 卡选图并确认，点 MODE 选模式，返回后点 SEND 发射。 | Select and confirm a photo from the SD card, choose a mode under MODE, then return and tap SEND. |
 | FT8 / FT4 | MODE → FT8/4，十行守听和通联状态同屏，手动、半自动、全自动三档，支持多人来叫时点选；日志存入 SD 卡。 | Open MODE → FT8/4 for on-screen status, manual, semi-auto and full-auto operation, and caller selection. Completed QSOs are logged to the SD card. |
 | APRS | 普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。 | In FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS. |
-| 数字语音接收 / Digital voice RX | 数字语音接收：支持明文 DMR、C4FM 和常规 P25 Phase 1。通过 MODE 的 DV 键循环切换，需在 SD 卡 IC-705 目录保留 DMRRX.BIN。 | Digital voice reception covers clear DMR, C4FM and conventional P25 Phase 1. Cycle through them with the MODE menu’s DV key. Keep DMRRX.BIN in the IC-705 folder on the SD card. |
+| 数字语音接收 / Digital voice RX | 数字语音接收：支持明文 DMR、YSF（C4FM）和常规 P25 Phase 1。通过 MODE 的 DV 键循环切换，需在 SD 卡 IC-705 目录保留 DMRRX.BIN。 | Digital voice reception covers clear DMR, YSF (C4FM) and conventional P25 Phase 1. Cycle through them with the MODE menu’s DV key. Keep DMRRX.BIN in the IC-705 folder on the SD card. |
 
 [安装说明 · Installation guide](https://bi1bif.github.io/IC-705-Firmware/#install) · [数字语音 SD 卡文件 · Digital voice SD files](docs/converter/digital-voice-sd.zip) · [数字语音源码与许可 · Digital voice sources and licenses](docs/converter/digital-voice-source.zip)
 
@@ -38,6 +38,20 @@ Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed 
 补丁统一使用 **v主版本.功能版本.修订号**。重大升级递增第一位，新增功能递增第二位，修复递增第三位。日版 J140 和欧／美版 E140 的同一次更新共用一个版本号。
 
 Patch releases use **vMAJOR.MINOR.PATCH**. Major upgrades, new features and fixes increment the first, second and third numbers respectively. Regional builds of the same release share a version.
+
+**2026-11-24 · v1.5.2 · J140 / E140**
+
+YSF（Yaesu System Fusion）：原 C4FM 模式的面板标签改为 YSF。修正接收信号失真时 DN 来电信息和语音可能无法解码的问题。
+
+常规 P25 Phase 1：改善失真信号的同步与纠错。自动识别来电 NAC、组呼、个呼和全呼，无需预设组号或个呼号码。
+
+两区均通过录波回放。YSF 与 P25 的真机接收和连续运行仍待验证。升级时请同时换用本版 SD 卡包里的 DMRRX.BIN。
+
+YSF (Yaesu System Fusion): the mode label changes from C4FM to YSF. Fixed missing DN caller information and audio when the received signal is distorted.
+
+Conventional P25 Phase 1: improved synchronization and error correction for distorted signals. The receiver automatically detects the incoming NAC and group, individual and all calls without preset destinations.
+
+Both regions passed recorded-signal replay. Reception and sustained operation of YSF and P25 on a physical radio still need testing. Replace DMRRX.BIN with the copy in this release’s SD ZIP when upgrading.
 
 **2026-11-24 · v1.5.1 · J140 / E140**
 
@@ -131,7 +145,7 @@ First public release of on-radio FT8 (15 s) and FT4 (7.5 s) RX/TX. Select GPS or
 
 </details>
 
-[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [FT8／FT4 操作 GIF](docs/images/ftx-v2-native.gif) · [数字语音 / Digital voice GIF](docs/images/digital-voice-v150.gif) · [APRS 操作 GIF](docs/images/aprs-v150.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
+[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [FT8／FT4 操作 GIF](docs/images/ftx-v2-native.gif) · [数字语音 / Digital voice GIF](docs/images/digital-voice-v152.gif) · [APRS 操作 GIF](docs/images/aprs-v150.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
 
 ## 微信交流群 · WeChat test group
 

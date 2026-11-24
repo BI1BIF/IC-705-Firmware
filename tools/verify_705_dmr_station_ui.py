@@ -286,7 +286,7 @@ def test(region,folder,output,meta,ram,*,aprs_elf=None):
         finally: c.hook_del(h)
         assert read(sy["thread_id"])==read(sy["allocation"])==read(sy["image"])==0 and heap()==before
 
-    for m,title in ((2,"C4FM"),(3,"P25")):
+    for m,title in ((2,"YSF"),(3,"P25")):
         menu(); clear_tones(1); tap(130,242)
         assert tones==[m] and read(SEQUENCER,1)==1,(title,tones)
         clear_tones(original_beep)

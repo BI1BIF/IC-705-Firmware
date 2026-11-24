@@ -69,7 +69,7 @@ unsigned dmr_mode_text(char *dst, unsigned mode, unsigned data)
 {
     if (mode==7 && !data && active()) {
         unsigned m=dmr_ui_get_status()->enabled;
-        const char *text=m==3 ? "P25" : m==2 ? "C4FM" : "DMR";
+        const char *text=m==3 ? "P25" : m==2 ? "YSF" : "DMR";
         unsigned n=0;
         while(text[n]) { dst[n]=text[n]; ++n; }
         return n;

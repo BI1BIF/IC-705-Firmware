@@ -1,5 +1,6 @@
 """Replay captured IQ through a modeled FM audio path, SD decoder and installed playback DMA."""
 import argparse
+from hashlib import sha256
 import json
 from pathlib import Path
 import sys
@@ -39,10 +40,32 @@ def verify(package, region, cutoff):
         (output / (label + ".json")).write_text(json.dumps(result, indent=2))
 
 
+def verify_field(package, region, recording):
+    """Start the installed receiver with raw SD audio and no frame timing."""
+    assert sha256(recording.read_bytes()).hexdigest() == "5f4d078f0dfd4a734a6c9749a7dc083c5d4eb7c5a9c16a3f4ee154bc43446713"
+    with wave.open(str(recording), "rb") as audio:
+        assert (audio.getframerate(), audio.getsampwidth(), audio.getnchannels()) == (8000, 2, 1)
+        raw = np.frombuffer(audio.readframes(audio.getnframes()), "<i2")
+    pcm = np.rint(resample_poly(raw.astype(float), 6, 1)).clip(-32768, 32767).astype("<i2")
+    output = package / region
+    label = "ysf-705-field"
+    result = replay(label, 2, pcm, package_dir=package, output_dir=output)
+    assert result["rows"] == ["DN DG-ID 00 RX BI1BIF"] and result["samples"] == 51200, result
+    with wave.open(str(output / (label + ".wav")), "rb") as audio:
+        expected = audio.readframes(audio.getnframes())
+    pcm = np.pad(pcm, (0, 24012 + (-len(pcm)) % 36))
+    bench(region, pcm, None, digital=(2, label, expected), package_dir=package)
+    (output / (label + ".json")).write_text(json.dumps(result, indent=2))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
     parser.add_argument("region", choices=("J", "E"))
     parser.add_argument("--cutoff", choices=(400, 750), type=int, default=750)
+    parser.add_argument("--field-wav", type=Path, help="IC-705 C4FM DN field recording from 09:59:56")
     args = parser.parse_args()
-    verify(args.package.resolve(), args.region, args.cutoff)
+    if args.field_wav:
+        verify_field(args.package.resolve(), args.region, args.field_wav)
+    else:
+        verify(args.package.resolve(), args.region, args.cutoff)

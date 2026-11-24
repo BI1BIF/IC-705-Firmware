@@ -1,10 +1,10 @@
 {
-  "version": "v1.5.1",
+  "version": "v1.5.2",
   "size": 12279020,
   "stock": "132383f8388641d02d0fadaccf9878d01a1960fa77a028328f0eb33dcfbc147b",
-  "target": "d93e354ff41e8fcc5a8f1aa26c2e73974523608d590c9ed0d65adeca5944756b",
-  "patch": "5e53dbe49de347fb2fc27568cf53c147aa15c40c2bed34ea438568ad00c638ef.xor.gz",
-  "patchHash": "5e53dbe49de347fb2fc27568cf53c147aa15c40c2bed34ea438568ad00c638ef",
+  "target": "21843a6d5fabf0876ef745a6ce94441efdbf70bceda8949ee846b755dad5c2c7",
+  "patch": "309d57ff0df34c5f5d0511626dccb712c770484594600d86344836bae4172be8.xor.gz",
+  "patchHash": "309d57ff0df34c5f5d0511626dccb712c770484594600d86344836bae4172be8",
   "notes": {
     "features": {
       "zh": [
@@ -14,7 +14,7 @@
         "FT8／FT4：守听与通联同屏，支持手动、半自动、全自动和同隙多人来叫点选，日志落盘。",
         "FT8／FT4 通联：主动呼叫 CQ、点选电台应答，或启用自动选台与自动通联。完成的通联追加到 SD 卡 IC-705/FTLOG.ADI。",
         "APRS：普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。",
-        "数字语音接收：支持明文 DMR、C4FM 和常规 P25 Phase 1。通过 MODE 的 DV 键循环切换，需在 SD 卡 IC-705 目录保留 DMRRX.BIN。"
+        "数字语音接收：支持明文 DMR、YSF（C4FM） 和常规 P25 Phase 1。通过 MODE 的 DV 键循环切换，需在 SD 卡 IC-705 目录保留 DMRRX.BIN。"
       ],
       "en": [
         "CW decoding: read decoded text, speed and waveform on the radio.",
@@ -23,10 +23,20 @@
         "FT8/FT4 keeps the receive list visible during contacts, with manual, semi-auto and full-auto operation, caller selection and ADIF logging.",
         "FT8/FT4 contacts: call CQ, tap a station to reply, or enable automatic caller selection and sequencing. Completed contacts are appended to IC-705/FTLOG.ADI on the SD card.",
         "APRS: in FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS.",
-        "Digital voice reception covers clear DMR, C4FM and conventional P25 Phase 1. Cycle through them with the MODE menu’s DV key. Keep DMRRX.BIN in the IC-705 folder on the SD card."
+        "Digital voice reception covers clear DMR, YSF (C4FM) and conventional P25 Phase 1. Cycle through them with the MODE menu’s DV key. Keep DMRRX.BIN in the IC-705 folder on the SD card."
       ]
     },
     "history": [
+      {
+        "version": "v1.5.2",
+        "date": "2026-11-24",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "YSF（Yaesu System Fusion）：原 C4FM 模式的面板标签改为 YSF。修正接收信号失真时 DN 来电信息和语音可能无法解码的问题。\n\n常规 P25 Phase 1：改善失真信号的同步与纠错。自动识别来电 NAC、组呼、个呼和全呼，无需预设组号或个呼号码。\n\n两区均通过录波回放。YSF 与 P25 的真机接收和连续运行仍待验证。升级时请同时换用本版 SD 卡包里的 DMRRX.BIN。",
+        "en": "YSF (Yaesu System Fusion): the mode label changes from C4FM to YSF. Fixed missing DN caller information and audio when the received signal is distorted.\n\nConventional P25 Phase 1: improved synchronization and error correction for distorted signals. The receiver automatically detects the incoming NAC and group, individual and all calls without preset destinations.\n\nBoth regions passed recorded-signal replay. Reception and sustained operation of YSF and P25 on a physical radio still need testing. Replace DMRRX.BIN with the copy in this release’s SD ZIP when upgrading."
+      },
       {
         "version": "v1.5.1",
         "date": "2026-11-24",

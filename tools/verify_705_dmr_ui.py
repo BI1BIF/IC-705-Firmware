@@ -110,8 +110,8 @@ def run(region):
     assert not enabled()
     c.mem_write(STATUS+36,bytes(48))
     from_fm(); screen("repeat-start","DMR")
-    menu(); tap(130,242); screen("fusion","C4FM")
-    guest.press_exit(); screen("exit-fusion","C4FM")
+    menu(); tap(130,242); screen("fusion","YSF")
+    guest.press_exit(); screen("exit-fusion","YSF")
     assert enabled()==2
     menu(); tap(130,242); screen("p25","P25")
     guest.press_exit(); screen("exit-p25","P25")
@@ -149,7 +149,7 @@ def run(region):
     assert not enabled() and c.mem_read(0x203e2128,1)[0]>>4!=7
     result={"region":region,"baseline":sha256(dat).hexdigest(),"ui_bytes":len(program),
             "zero_initialized_bytes":work,"backend":"isolated fixture status ABI",
-            "paths":["DV > DMR > group fields > EXIT","physical EXIT keeps digital RX","C4FM and P25 active mode cycle",
+            "paths":["DV > DMR > group fields > EXIT","physical EXIT keeps digital RX","YSF and P25 active mode cycle",
                      "DMR > original DV","cancel FT8/4 selector, select analog mode","missing payload > touch EXIT",
                      "resource error > physical EXIT","six-second timeout","successful retry"]}
     (out/"ui-results.json").write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")

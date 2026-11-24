@@ -210,6 +210,7 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
     leave,back=(4000,4560) if field else (2100,2300)
     center=word(0x20380714)
     resumed=None
+    p25_address_recovered=False
     fine_audio=0
     lamp_test=field and not stress and "dmr_rx_lamp" in sy
     lamp_runs=[]
@@ -286,7 +287,10 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
                 resumed=block
                 assert stat()[1]==2,stat()
                 if field: assert stat()[2:]==(6,4601205,9),stat()
-                if mode==3: assert stat()[2:]==(0x293,1,1),stat()
+            if mode==3:
+                address=stat()[2:]
+                assert address in ((0x293,0xffffffff,0xffffffff),(0x293,1,1)),address
+                p25_address_recovered |= address==(0x293,1,1)
             fine_audio+=emitted
         if emitted:
             if first is None: first=block
@@ -312,6 +316,7 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
     assert core_word("written")==len(samples)//36, (core_word("written"),len(samples)//36)
     if retune:
         assert first is not None and first<leave and resumed is not None and resumed-back<1500,(first,resumed,back)
+        assert mode!=3 or p25_address_recovered
         assert fine_audio>=2400 and len(created)==1 and stat()[0]==mode,(fine_audio,stat())
         assert np.max(np.abs(np.frombuffer(captured[-2*fine_audio:],"<i2").astype(int)))>200
         assert not invoke(sy["dmr_rx_set_enabled"],0) and pump()==STOP and not live
@@ -434,7 +439,7 @@ if __name__=="__main__":
     parser.add_argument("--digital",choices=["ysf","p25p1_c4fm_vc"])
     parser.add_argument("--retune",action="store_true",help="Leave and rejoin the same ongoing call during a dial sweep")
     parser.add_argument("--highpass",type=int,choices=(200,250,300),default=0)
-    parser.add_argument("--field-wav",type=Path,help="Known DMR field recording for regression")
+    parser.add_argument("--field-wav",type=Path,help="Known 20261123_081129 field regression")
     parser.add_argument("--field-repeats",type=int,default=1,help="Repeat the field recording in one receiver session and measure its worker stack")
     parser.add_argument("--package-dir",type=Path,default=OUT,help="Use the named build with its matching payload and cold UI evidence")
     args=parser.parse_args()
@@ -447,8 +452,7 @@ if __name__=="__main__":
         samples=np.pad(samples,(0,24012+(-len(samples))%36))
         with wave.open(str(OUT/(name+".wav")),"rb") as f: expected=f.readframes(f.getnframes())
         for r in args.region or ["J","E"]:
-            bench(r,samples,None,package_dir=args.package_dir,
-                  digital=(2 if name=="ysf" else 3,name,expected),retune=args.retune)
+            bench(r,samples,None,digital=(2 if name=="ysf" else 3,name,expected),retune=args.retune)
         sys.exit(0)
     if args.field_repeats<1 or (args.field_repeats>1 and not args.field_wav):
         parser.error("--field-repeats must be positive and requires --field-wav for stress runs")
