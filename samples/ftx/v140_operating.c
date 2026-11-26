@@ -20,6 +20,8 @@ enum { CAPTION_RAIL, CAPTION_ROW, CAPTION_HEADER, CAPTION_KEY, CAPTION_DIM_KEY, 
 enum { run_ms=45*60*1000, rest_ms=5*60*1000 };
 enum { row_top=106, row_step=18, setup_top=108, setup_step=23, filter_page=1 };
 enum { menu_top=108, menu_step=31 };
+enum { value_x=250, tone_minus=191, tone_plus=314, tone_width=44,
+       tone_y=setup_top+4*setup_step+1,tone_height=setup_step-2 };
 unsigned overlay_page;
 static unsigned menu_sheet,auto_sheet,history_offset,history_end;
 void operating_index_rows(void);
@@ -106,14 +108,17 @@ extern int field_get(const char *,const char *,char *,unsigned);
 extern unsigned ftx_position(void), sender_grid(const struct DisplayRow *);
 extern int ftx_km(unsigned);
 
+enum { NATIVE_RECEIVE, NATIVE_SEND_SETUP, NATIVE_PARKED_MENU };
+static const uint8_t *const operating_modes[] = {v2_manual,v2_semi,v2_full};
+
 static struct {
     unsigned mode, tries, multiple_first, on_limit, auto_style;
     unsigned running, enabled_slot, manual_cq, offer_count, offer_slot, choosing;
-    unsigned setup_for_send, completed, typing_target, target_ready;
+    unsigned native_context, completed, typing_target, target_ready;
     unsigned cycle_started, rest_until, rest_mode, timed, order, cool, page, filter_edit;
     unsigned signal_sort, next_cooldown, rx_slot, elapsed;
     char include[7], exclude[7];
-    struct { unsigned until, hz, mode; char call[7]; } cooldown[16];
+    struct { unsigned until, hz; char call[7]; uint8_t mode; } cooldown[16];
     struct DisplayRow offers[10];
     struct DisplayRow search_rows[6];
     unsigned search_count;
@@ -316,6 +321,7 @@ static void clear_workflow(void)
     operating.running = operating.manual_cq = operating.offer_count = 0;
     operating.choosing = operating.search_count = 0;
     operating.typing_target = operating.target_ready = 0;
+    operating.native_context = NATIVE_RECEIVE;
     operating.rest_mode = 0;
     ft_auto_armed = 0;
 }
@@ -333,9 +339,11 @@ static void stop_contact(void)
 
 void operating_open(void)
 {
+    /* The radio owns clock synchronization. Select its RTC before starting RX. */
+    FT_RTC=1;
     ft_station_open();
     clear_workflow();
-    operating.setup_for_send = operating.completed = 0;
+    operating.completed = 0;
     operating.page=operating.filter_edit=0;
     overlay_page=menu_sheet=auto_sheet=0;
     options_load();
@@ -398,9 +406,12 @@ static int start_contact(void)
             ft_receive_row(&target,1);
         } else if (!stock_ft_touch(440,104)) return 0;
     }
-    if (ft_page != FT_QSO) return 1;
+    if (ft_page != FT_QSO) { overlay_page=0; return 1; }
     const int action = stock_ft_touch(440,104);
-    if (ft_page == FT_SETUP) operating.setup_for_send = 1;
+    if (ft_page == FT_SETUP) {
+        overlay_page=0;
+        operating.native_context = NATIVE_SEND_SETUP;
+    }
     if (stage == WAIT) {
         operating.manual_cq = kind == CQ && operating.mode == MANUAL;
         operating.target_ready = 0;
@@ -413,8 +424,9 @@ static int start_automatic(unsigned type)
 {
     unsigned slot, ms;
     tx_frequency = RADIO_HZ;
-    if (!ft_listen() || !mode_ok() || foreign_tx() ||
-        !ft_clock(&slot,&ms) || !pref.call[0]) return 0;
+    notice=(!ft_listen() || !mode_ok())?"Check TX VFO USB-D":foreign_tx();
+    if (notice) {view_invalidate();return 0;}
+    if (!ft_clock(&slot,&ms) || !pref.call[0]) return 0;
     ft_return_live();
     ft_page = FT_LIST;
     operating.running = type;
@@ -444,8 +456,15 @@ static void enter_rest(void)
 
 static int primary_start(void)
 {
-    if (operating.mode == FULL && ft_page == FT_LIST && !ft_choice_row() && pref.call[0])
-        return start_automatic(operating.auto_style);
+    if (operating.mode == FULL && ft_page == FT_LIST && !ft_choice_row() && is_call(pref.call)) {
+        unsigned slot, ms;
+        if (!ft_clock(&slot,&ms)) {
+            notice="Waiting for UTC";
+            view_invalidate();
+            return 1;
+        }
+        return start_automatic(operating.auto_style) || notice;
+    }
     int result = start_contact();
     if (operating.mode == FULL && stage == WAIT && !operating.running) {
         operating.running = operating.auto_style;
@@ -666,16 +685,24 @@ static int is_confirmation(void)
         !operating.choosing && from_list == 2;
 }
 
-unsigned operating_status(void)
+/* Let station setup, time and keyboards use their real pages. The parked
+   contact stays intact while the menu temporarily owns the foreground. */
+static void open_native_menu(void)
 {
-    if (operating.rest_mode) return REST;
-    if (operating.choosing) return PICK;
-    if (stage == WAIT) return QUEUED;
-    if (stage >= KEY && stage <= DRAIN) return ON_AIR;
-    if (is_confirmation()) return CONFIRM;
-    if (operating.running == AUTO_FIND && ft_page == FT_LIST) return SCAN;
-    if (ft_page == FT_QSO && has_sent) return WAIT_RX;
-    return operating.completed ? COMPLETE : LISTEN;
+    if (overlay_page) {
+        operating.native_context = NATIVE_PARKED_MENU;
+        ft_page=FT_MENU;
+        overlay_page=0;
+    }
+}
+
+static void close_native_menu(void)
+{
+    if (operating.native_context == NATIVE_PARKED_MENU) {
+        operating.native_context = NATIVE_RECEIVE;
+        ft_page=FT_QSO;
+        overlay_page=FT_MENU;
+    }
 }
 
 int operating_touch(unsigned x, unsigned y)
@@ -748,40 +775,42 @@ int operating_touch(unsigned x, unsigned y)
         return 0;
     }
     if (page==FT_MENU || page==FT_AUTO) {
+        if (rail_hit(x,y,237)) {
+            if (page==FT_AUTO) screen_to(FT_MENU);
+            else if (operating.page == filter_page) operating.page=0;
+            else screen_to(FT_LIST);
+            view_invalidate();return 1;
+        }
         unsigned *sheet=page==FT_MENU?&menu_sheet:&auto_sheet;
         if (operating.page!=filter_page && (rail_hit(x,y,89)||rail_hit(x,y,125))) {
             *sheet=y>=125;view_invalidate();return 1;
         }
-    }
-    if (page == FT_MENU) {
-        if (rail_hit(x,y,237)) {
-            if (operating.page == filter_page) operating.page=0;
-            else screen_to(FT_LIST);
+        if (x>=395 || y<menu_top || y>=menu_top+5*menu_step || (y-menu_top)%menu_step>=27) return 1;
+        unsigned row=(y-menu_top)/menu_step;
+        if (page==FT_MENU) {
+            if (operating.page!=filter_page) row+=5*menu_sheet;
+            if (row>=8) return 0;
+            if (busy && row!=0 && row!=2 && row!=3 && row!=5 && row!=6) return 1;
+            if (operating.page==filter_page) {
+                if (row>1) return 0;
+                memcpy(edit,row?operating.exclude:operating.include,7);
+                open_native_menu();
+                operating.filter_edit=row+1;ft_page=FT_CALL;
+            } else switch (row) {
+                case 0: auto_sheet=0;screen_to(FT_AUTO);break;
+                case 1: open_native_menu();edit[0]=0;operating.typing_target=1;ft_page=FT_CALL;break;
+                case 2: history_open();screen_to(FT_LIST);break;
+                case 3: journal_state[2]=0;journal_state[15]=1;screen_to(FT_LOG);break;
+                case 4:
+                    open_native_menu();return stock_ft_touch(100,177);
+                case 5: operating.signal_sort^=1;operating_index_rows();ft_return_live();options_save();break;
+                case 6: ft_history_action(2);screen_to(FT_LIST);break;
+                case 7: operating.page=filter_page;break;
+            }
             view_invalidate();return 1;
         }
-        if (x>=395 || y<menu_top || y>=menu_top+5*menu_step || (y-menu_top)%menu_step>=27) return 1;
-        unsigned row=(y-menu_top)/menu_step+(operating.page==filter_page?0:5*menu_sheet);
-        if (busy && row!=0 && row!=2 && row!=3 && row!=5 && row!=6) return 1;
-        if (operating.page==filter_page) {
-            if (row>1) return 0;
-            memcpy(edit,row?operating.exclude:operating.include,7);
-            operating.filter_edit=row+1;ft_page=FT_CALL;
-        } else switch (row) {
-            case 0: auto_sheet=0;screen_to(FT_AUTO);break;
-            case 1: edit[0]=0;operating.typing_target=1;ft_page=FT_CALL;break;
-            case 2: history_open();screen_to(FT_LIST);break;
-            case 3: journal_state[2]=0;journal_state[15]=1;screen_to(FT_LOG);break;
-            case 4: return stock_ft_touch(100,177);
-            case 5: operating.signal_sort^=1;operating_index_rows();ft_return_live();options_save();break;
-            case 6: ft_history_action(2);screen_to(FT_LIST);break;
-            case 7: operating.page=filter_page;break;
-            case 8: return stock_ft_touch(100,146);
-        }
-        view_invalidate();return 1;
-    } else if (page == FT_AUTO) {
-        if (rail_hit(x,y,237)) {screen_to(FT_MENU);return 1;}
-        if (busy || x>=395 || y<menu_top || y>=menu_top+5*menu_step || (y-menu_top)%menu_step>=27) return 1;
-        unsigned choice=(y-menu_top)/menu_step+5*auto_sheet;
+        if (busy) return 1;
+        unsigned choice=row+5*auto_sheet;
         if ((choice==1||choice==3||choice==5) && operating.mode!=FULL) return 1;
         if (choice==4 && operating.mode==FULL) return 1;
         switch (choice) {
@@ -799,8 +828,10 @@ int operating_touch(unsigned x, unsigned y)
         return 1;
     } else if (ft_page == FT_SETUP && x<395 && y>=setup_top && y<setup_top+6*setup_step) {
         unsigned row=(y-setup_top)/setup_step;
-        const unsigned native_y[]={130,130,163,163,196,229};
-        unsigned right=(row==1 || row==3 || row==5 || (row==4 && x>=200));
+        static const uint8_t native_y[]={130,130,163,163,196,229};
+        if (row==4 && (y-tone_y>=tone_height ||
+            (x-tone_minus>=tone_width && x-tone_plus>=tone_width))) return 0;
+        unsigned right=(row==1 || row==3 || row==5 || (row==4 && x>=tone_plus));
         if (row==5) pref.call[7]=0;
         int handled=stock_ft_touch(right?265:90,native_y[row]);
         if (ft_page==FT_GRID) expand_grid(edit,pref.grid,station_detail());
@@ -822,12 +853,13 @@ int operating_touch(unsigned x, unsigned y)
     } else if (ft_page == FT_CALL && operating.filter_edit && x>=417 && y>=156) {
         if (y>=228 || y<188) {
             if (y<188) { memcpy(operating.filter_edit==1?operating.include:operating.exclude,edit,strlen(edit)+1);options_save(); }
-            operating.filter_edit=0;ft_page=FT_MENU;view_invalidate();return 1;
+            operating.filter_edit=0;ft_page=FT_MENU;close_native_menu();view_invalidate();return 1;
         }
     } else if (ft_page == FT_CALL && operating.typing_target && x >= 417) {
         if (y >= 228) {
             operating.typing_target = 0;
             ft_page = FT_MENU;
+            close_native_menu();
             return 1;
         }
         if (y >= 156 && y < 188) {
@@ -841,17 +873,19 @@ int operating_touch(unsigned x, unsigned y)
             from_list = 0;
             operating.typing_target = 0;
             operating.target_ready = 1;
+            operating.native_context = NATIVE_RECEIVE;
             return 1;
         }
     }
     page = ft_page;
     int handled = stock_ft_touch(x,y);
-    if (page == FT_SETUP && ft_page != FT_SETUP && ft_page != FT_CALL && ft_page != FT_GRID &&
-        operating.setup_for_send) {
-        operating.setup_for_send = 0;
+    if (page == FT_SETUP && ft_page == FT_QSO &&
+        operating.native_context == NATIVE_SEND_SETUP) {
+        operating.native_context = NATIVE_RECEIVE;
         ft_page = FT_LIST;
         view_invalidate();
     }
+    if (ft_page==FT_MENU) close_native_menu();
     return handled;
 }
 
@@ -1026,7 +1060,6 @@ void operating_draw_rail(void)
 {
     const float *background=v2_caption_background[CAPTION_RAIL];
     static const float highlight[] = {.24f,.66f,.37f,1};
-    static const uint8_t *const modes[] = {v2_manual,v2_semi,v2_full};
     /* The factory compositor folds the rightmost 120 pixels into three
        tiles. Each filled rectangle stays inside a single tile. */
     rectangle(background,397,89,83,64);
@@ -1045,7 +1078,7 @@ void operating_draw_rail(void)
         word_key(v2_up,top,FT_FIRST+10<FT_COUNT);word_key(v2_down,top+36,history_offset!=0);word_key(v2_real,top+72,1);
         page_number(history_offset,(FT_COUNT+9)/10,400,254);
     } else {
-        label(modes[operating.mode],402,123,CAPTION_RAIL);
+        label(operating_modes[operating.mode],402,123,CAPTION_RAIL);
         ft_label(ftx_ft4?"FT4":"FT8",401,138,13,15);
         label(stage==SOUND||stage==DRAIN?v2_tx:v2_rx,427,137,CAPTION_RAIL);
         slot_timer();
@@ -1095,6 +1128,7 @@ static unsigned phase_tile(unsigned char c)
 
 static void phase_message(const char *text,unsigned x,int transmitting)
 {
+    #include "phase-widths.h"
     static const uint16_t tx_colors[] = {
         0xa0a4,0xa926,0xa987,0xb209,0xba8b,0xbb0d,0xc36e,0xcbf0,
         0xcc72,0xd4f4,0xdd55,0xddd7,0xe659,0xeedb,0xef3c,0xf7be
@@ -1104,9 +1138,11 @@ static void phase_message(const char *text,unsigned x,int transmitting)
         (const uint16_t *)(flash+FT_ART+CAPTION_PALETTE)+16*CAPTION_HEADER;
     uint16_t *pixels=(void *)FT_GLYPH_PIXELS;
     void (*blit)(const uint16_t *,int,unsigned,int,int,int,int)=(void *)PANEL_TILE;
-    for (;x+8<=213 && *text;++text,x+=8) {
+    for (;*text;++text) {
         unsigned index=phase_tile(*text);
-        if (!index) continue; /* The entire header strip was already cleared. */
+        unsigned width=phase_width[index];
+        if (!width) { x+=5; continue; }
+        if (x+width>213) break;
         /* RX_CHARS splits before T, and '-' is the eighth tile after T. */
         unsigned offset=index<30?ROW_DIGITS+(index-1)*448:ROW_MINUS+(index-38)*448;
         const uint16_t *source=(const uint16_t *)(flash+offset);
@@ -1116,8 +1152,19 @@ static void phase_message(const char *text,unsigned x,int transmitting)
         for (unsigned i=0;i<8*14;i+=16)
             __asm__ volatile("mcr p15,0,%0,c7,c10,1"::"r"(pixels+i):"memory");
         __asm__ volatile("dsb sy":::"memory");
-        blit(pixels+104,-16,3,x,171,8,14); /* Screen y=87..100. */
+        blit(pixels+104,-16,3,x,171,width,14); /* Screen y=87..100. */
         ((void (*)(void))PANEL_FINISH)();
+        x+=width+1;
+    }
+}
+
+static void menu_path(const uint8_t *parent,const uint8_t *child,unsigned surface)
+{
+    ft_label(Z_menu " >",6,86,13,15);
+    label(parent,55,86,surface);
+    if (child) {
+        ft_label(">",126,87,13,15);
+        label(child,140,86,surface);
     }
 }
 
@@ -1128,7 +1175,7 @@ static void draw_phase(void)
     const unsigned phase = atomic_load(&stage);
     const int transmitting = phase == SOUND || phase == DRAIN;
     if (ft_is_history()) {
-        label(v2_history,3,86,CAPTION_HEADER);
+        menu_path(v2_history,0,CAPTION_HEADER);
     } else {
         const int confirming=is_confirmation();
         const int sending=running_contact() && outgoing[0] && !operating.rest_mode;
@@ -1136,6 +1183,10 @@ static void draw_phase(void)
         char target[7];
         const char *selected=ft_page==FT_QSO && partner[0]?partner:sender(target,picked)?target:0;
         rectangle(transmitting && sending ? tx : idle,0,86,213,16);
+        if (phase==IDLE && !sequence_on && notice) {
+            ft_label(notice,3,86,13,15);
+            return;
+        }
         if (transmitting && sending) phase_message("TX",4,1);
         else label(confirming?v2_confirm:sending ? (phase==WAIT || phase==KEY?v2_pending:v2_sent) : selected?v2_draft :
                    (operating.rest_mode?v2_rest:v2_listen),3,86,CAPTION_HEADER);
@@ -1165,14 +1216,6 @@ void operating_slot_bar(unsigned slot, unsigned elapsed)
         /* Both FT modes repeat their A/B cycle within a minute. Use the
            selected stock clock directly, even while the audio task is idle. */
         unsigned bcd=*(volatile uint8_t *)0x203807a0;
-        if (!FT_RTC) {
-            bcd=0xff;
-            if (((unsigned (*)(void))GPS_TIME_VALID)()) {
-                char utc[8];
-                ((void (*)(char *))GPS_READ_TIME)(utc);
-                bcd=16*(unsigned)(utc[4]-'0')+(unsigned)(utc[5]-'0');
-            }
-        }
         if (bcd!=displayed_second) {
             displayed_second=bcd;
             displayed_edge=TICKS;
@@ -1277,13 +1320,8 @@ static void menu_value(unsigned y,unsigned h,const uint8_t *title,const uint8_t 
     menu_band(y,h);
     y+=(h-17)/2;
     label(title,10,y+1,surface);
-    if (value) {
-        unsigned n=0;
-        while(value[n]) ++n;
-        label(value,352-16*n,y+1,surface);
-    } else {
-        ft_label(plain,352-8*strlen(plain),y+2,12,15);
-    }
+    if (value) label(value,value_x,y+1,surface);
+    else ft_label(plain,value_x,y+2,12,15);
 }
 
 static void draw_page_background(void)
@@ -1329,7 +1367,7 @@ int operating_log_read(int fd,unsigned pos,char *view,unsigned size)
 
 static void draw_log(void)
 {
-    draw_page_background();label(v2_log,6,86,CAPTION_RAIL);
+    draw_page_background();menu_path(v2_log,0,CAPTION_RAIL);
     label(v2_hdr_call,5,107,CAPTION_RAIL);ft_label("DXCC",95,108,12,15);
     label(v2_hdr_grid,182,107,CAPTION_RAIL);label(v2_hdr_band,238,107,CAPTION_RAIL);ft_label("UTC",280,108,12,15);
     unsigned offset=journal_state[2],total=journal_state[1];
@@ -1354,16 +1392,18 @@ void operating_draw_page(unsigned full)
         return;
     }
     if (screen_page() == FT_SETUP) {
-        char grid[9], hz[]="0000 Hz  - / +";
+        char grid[9], hz[]="0000 Hz";
         expand_grid(grid,pref.grid,station_detail());
         unsigned f=pref.hz;
         for (int i=3;i>=0;--i){hz[i]='0'+f%10;f/=10;}
-        draw_page_background();ft_label(Z_station,6,88,15,15);
+        draw_page_background();menu_path(v2_station,0,CAPTION_RAIL);
         menu_value(setup_top,setup_step,v2_mycall,0,pref.call);
         menu_value(setup_top+setup_step,setup_step,v2_mygrid,0,grid[0]?grid:"AUTO");
         menu_value(setup_top+2*setup_step,setup_step,v2_slot,0,pref.parity?"B":"A");
         menu_value(setup_top+3*setup_step,setup_step,v2_follow,pref.follow?v2_follow:0,"FIXED");
         menu_value(setup_top+4*setup_step,setup_step,v2_tone,0,hz);
+        ft_key("-",tone_minus,tone_y,tone_width,tone_height);
+        ft_key("+",tone_plus,tone_y,tone_width,tone_height);
         menu_value(setup_top+5*setup_step,setup_step,v2_gps,0,">");
         ft_key(Z_save,417,229,61,39);
         if (notice) ft_label(notice,6,251,12,15);
@@ -1371,10 +1411,17 @@ void operating_draw_page(unsigned full)
     }
     if (screen_page() != FT_MENU && screen_page() != FT_AUTO) {
         ft_panel_draw(full);
-        if ((operating.typing_target || operating.filter_edit) && screen_page() == FT_CALL) {
+        if (ft_page==FT_CALL || ft_page==FT_GRID || ft_page==FT_INFO) {
             const float *bar=v2_caption_background[CAPTION_HEADER];
-            rectangle(bar,45,86,260,17);
-            label(operating.filter_edit==1?v2_include:operating.filter_edit==2?v2_exclude:v2_target,46,86,CAPTION_HEADER);
+            rectangle(bar,0,86,360,16);
+            if (ft_page==FT_INFO) {
+                ft_label(Z_menu " >",6,86,13,15);
+                ft_label(Z_heard,55,86,13,15);
+            }
+            else if (operating.typing_target) menu_path(v2_target,0,CAPTION_HEADER);
+            else if (operating.filter_edit)
+                menu_path(v2_filter,operating.filter_edit==1?v2_include:v2_exclude,CAPTION_HEADER);
+            else menu_path(v2_station,ft_page==FT_CALL?v2_mycall:v2_mygrid,CAPTION_HEADER);
         }
         if (ft_page==FT_GRID && notice) ft_label(notice,6,105,12,15);
         return;
@@ -1382,13 +1429,12 @@ void operating_draw_page(unsigned full)
     draw_page_background();
     if (screen_page() == FT_MENU) {
         if (operating.page==filter_page) {
-            label(v2_filter,6,86,CAPTION_RAIL);
+            menu_path(v2_filter,0,CAPTION_RAIL);
             menu_value(row_top,row_step,v2_include,0,operating.include);
             menu_value(row_top+row_step,row_step,v2_exclude,0,operating.exclude);
         } else {
-            static const uint8_t *const modes[]={v2_manual,v2_semi,v2_full};
-            ft_label(Z_menu,6,88,15,15);
-            menu_value(row_top,row_step,v2_mode,modes[operating.mode],0);
+            ft_label(Z_menu,6,86,13,15);
+            menu_value(row_top,row_step,v2_mode,operating_modes[operating.mode],0);
             menu_value(row_top+row_step,row_step,v2_target,0,">");
             menu_value(row_top+2*row_step,row_step,v2_history,0,">");
             menu_value(row_top+3*row_step,row_step,v2_log,0,">");
@@ -1396,17 +1442,15 @@ void operating_draw_page(unsigned full)
             menu_value(row_top+5*row_step,row_step,v2_sort,operating.signal_sort?v2_strong:v2_arrival,0);
             menu_value(row_top+6*row_step,row_step,cq_only?v2_all:v2_cq,0,"");
             menu_value(row_top+7*row_step,row_step,v2_filter,0,">");
-            menu_value(row_top+8*row_step,row_step,v2_time,0,">");
         }
 
     } else {
-        static const uint8_t *const modes[] = {v2_manual,v2_semi,v2_full};
         static const uint8_t *const limits[] = {v2_stop,v2_next,0};
         static const uint8_t *const orders[] = {v2_first_rx,v2_strong,v2_near,v2_far};
         char retry[]={(char)('0'+operating.tries),0};
         char cool[]="00 min";cool[0]+=operating.cool/10;cool[1]+=operating.cool%10;
-        label(v2_mode_title,6,86,CAPTION_RAIL);
-        menu_value(row_top,row_step,v2_mode,modes[operating.mode],0);
+        menu_path(v2_mode,0,CAPTION_RAIL);
+        menu_value(row_top,row_step,v2_mode,operating_modes[operating.mode],0);
         menu_value(row_top+row_step,row_step,v2_start_as,operating.auto_style==AUTO_CQ?0:v2_scan,"CQ");
         menu_value(row_top+2*row_step,row_step,v2_tries,0,retry);
         menu_value(row_top+3*row_step,row_step,v2_order,orders[operating.order],0);

@@ -2,11 +2,11 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=7"><script type="module" src="converter/app.js?v=14"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=7"><script type="module" src="converter/app.js?v=15"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
-<p id="conversion-pause" role="status"><strong data-en="Firmware conversion is paused for J140 and E140 while we fix an issue in v1.6.0. Please wait for the corrected firmware before updating.">日版 J140 和欧／美版 E140 的固件转换已暂停。正在修复 v1.6.0 的问题，请等修正版发布后再更新。</strong></p>
+<p data-en="Select the original IC-705 1.40 DAT to build firmware with CW, SSTV, FT8/FT4, APRS and digital voice reception. Your file stays in this browser.">选择 IC-705 的 1.40 原厂 DAT，生成含 CW、SSTV、FT8／FT4、APRS 和数字语音接收的固件。原厂文件只在浏览器内处理。</p>
 <section class="walkthrough" aria-labelledby="demo-heading">
 <div><h2 id="demo-heading" data-en="Radio simulator walkthrough">电台模拟操作演示</h2>
 <p><a href="ftx-v2-sim.html" data-en="FT8 / FT4 simulator">FT8／FT4 模拟操作</a></p>
@@ -20,8 +20,8 @@
 </select>
 <p id="digital-steps" data-en="In MODE, tap DV to cycle through DMR, YSF and P25. The demo shows call information during reception.">在 MODE 里点按 DV 切换 DMR、YSF 和 P25，查看接收时显示的来话信息。</p>
 <div id="ftx-steps" hidden>
-<p data-en="Open MODE → FT8/4 and select FT8 or FT4. Watch a CQ move from queued to on air. Choose a caller and see the next message on the confirmation screen.">从 MODE → FT8/4 进入，选 FT8 或 FT4。查看 CQ 从排队到发射的进度，点选来叫后可在确认界面看到下一报。</p>
-<p class="hint" data-en="Open Menu → Auto operation to set retries and what happens when stations do not answer. Open History to review past contacts.">在「菜单 → 自动操作」设置尝试次数和无应答处理，也可打开历史查看通联记录。</p>
+<p data-en="Open MODE → FT8/4. In Menu → Station Settings, tap − or + to change the audio frequency by 50 Hz. The subpage header shows the current menu path.">从 MODE → FT8/4 进入，在菜单 → 本台设置点 − 或 +，每次调整音频频率 50 Hz。子页顶栏显示当前菜单路径。</p>
+<p class="hint" data-en="The demo also shows automatic-operation settings, CQ on air and the next message awaiting confirmation. FT8 and FT4 both use the radio clock.">动图还演示自动操作设置、CQ 发射和下一报确认。FT8 与 FT4 均使用机内时钟。</p>
 </div>
 <p id="aprs-steps" hidden data-en="Open QUICK → APRS RX List to browse packets and open their details or reply to a message. Open APRS Archive to browse earlier packets by date.">从 QUICK → APRS RX List 查看接收记录、打开详情或回复短消息。从 APRS Archive 按日期查看历史记录。</p>
 <div id="radio-steps" hidden><p data-en="In CW mode, press MENU → KEYER → CW DECODE to see the receiver decode CQ.">在 CW 模式下，按 MENU → KEYER → CW DECODE，查看模拟接收信号译出的 CQ。</p>
@@ -68,7 +68,7 @@
     <ul class="install-paths">
       <li><span data-en="Both regions">两区通用</span> <code>IC-705/DMRRX.BIN</code></li>
     </ul>
-    <p><a id="digital-card" href="converter/digital-voice-sd.zip?v=v1.6.0" download data-en="Download digital voice SD files (ZIP)">下载数字语音 SD 卡文件（ZIP）</a> · <a href="converter/digital-voice-source.zip?v=v1.6.0" data-en="Digital voice sources and licenses">数字语音源码与许可</a></p>
+    <p><a id="digital-card" href="converter/digital-voice-sd.zip?v=v1.6.1" download data-en="Download digital voice SD files (ZIP)">下载数字语音 SD 卡文件（ZIP）</a> · <a href="converter/digital-voice-source.zip?v=v1.6.1" data-en="Digital voice sources and licenses">数字语音源码与许可</a></p>
   </li>
   <li>
     <strong data-en="Run the firmware update">在电台上更新固件</strong>

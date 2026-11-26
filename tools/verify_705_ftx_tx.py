@@ -427,11 +427,12 @@ def replay(dat, ft4, *, e140=None, output=None, stock_rtc_offset=False):
     request(False)
     assert get("stage") == 0
     clock(start + 3 * period)
-    c.mem_write(0x203809c4,b"\x01")  # Debounced microphone PTT, before DSP acknowledgement.
+    c.mem_write(0x203e1e6b,b"\x01")  # OEM sampled MICPTT, before DSP acknowledgement.
     tap(442, 104)
     request(False)
     assert get("stage") == 0
-    c.mem_write(0x203809c4,b"\0")
+    c.mem_write(0x203e1e6b,b"\0")
+    c.mem_write(0x203809c4,b"\x01")  # This legacy flag alone must allow normal FT TX.
     choose_station()
     tap(442, 104)
     start += 4 * period

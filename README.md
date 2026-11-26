@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.6.0** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
+BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.6.1** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
 
-BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.6.0** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
+BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.6.1** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -38,6 +38,20 @@ Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed 
 补丁统一使用 **v主版本.功能版本.修订号**。重大升级递增第一位，新增功能递增第二位，修复递增第三位。日版 J140 和欧／美版 E140 的同一次更新共用一个版本号。
 
 Patch releases use **vMAJOR.MINOR.PATCH**. Major upgrades, new features and fixes increment the first, second and third numbers respectively. Regional builds of the same release share a version.
+
+**2026-11-26 · v1.6.1 · J140 / E140**
+
+修复｜FT8／FT4 从通联界面进入本台设置时偶发点按无响应；无法发射时，顶栏显示具体原因。修正手咪未按下时被误判为占用，按住实体手咪仍会阻止 FT 发射。
+
+调整｜FT8 和 FT4 统一使用电台内置时钟，移除 FT 菜单中的“授时来源”。修正顶栏呼号字距，让待发、发送中和待确认报文更易读。
+
+操作｜菜单各行的值对齐到同一列，子页顶栏显示菜单路径。本台设置中的音频频率可点 − 或 +，每次调整 50 Hz，范围为 200–2800 Hz。
+
+Fixed — FT8/FT4 Station Settings could fail to open from the contact screen. The header now shows why a transmission was refused. A released microphone no longer falsely blocks FT transmission. Holding the microphone PTT still takes priority.
+
+Changed — Both FT modes use the radio’s internal clock. The separate FT time-source selector has been removed. Callsign spacing in the header has been corrected for queued, on-air and confirmation messages.
+
+Controls — Menu values align in one column and subpage headers show the menu path. In Station Settings, tap − or + to adjust the audio frequency in 50 Hz steps from 200 to 2800 Hz.
 
 **2026-11-26 · v1.6.0 · J140 / E140**
 
@@ -189,7 +203,7 @@ First public release of on-radio FT8 (15 s) and FT4 (7.5 s) RX/TX. Select GPS or
 
 </details>
 
-[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [FT8／FT4 操作 GIF](docs/images/ftx-v160.gif) · [数字语音 / Digital voice GIF](docs/images/digital-voice-v160.gif) · [APRS 操作 GIF](docs/images/aprs-v160.gif) · [CW／SSTV 操作 GIF](docs/images/radio-v160.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
+[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [FT8／FT4 操作 GIF](docs/images/ftx-v161.gif) · [数字语音 / Digital voice GIF](docs/images/digital-voice-v160.gif) · [APRS 操作 GIF](docs/images/aprs-v160.gif) · [CW／SSTV 操作 GIF](docs/images/radio-v160.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
 
 ## 微信交流群 · WeChat test group
 

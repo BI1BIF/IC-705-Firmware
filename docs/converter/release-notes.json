@@ -21,6 +21,16 @@
   },
   "history": [
     {
+      "version": "v1.6.1",
+      "date": "2026-11-26",
+      "regions": [
+        "J140",
+        "E140"
+      ],
+      "zh": "修复｜FT8／FT4 从通联界面进入本台设置时偶发点按无响应；无法发射时，顶栏显示具体原因。修正手咪未按下时被误判为占用，按住实体手咪仍会阻止 FT 发射。\n\n调整｜FT8 和 FT4 统一使用电台内置时钟，移除 FT 菜单中的“授时来源”。修正顶栏呼号字距，让待发、发送中和待确认报文更易读。\n\n操作｜菜单各行的值对齐到同一列，子页顶栏显示菜单路径。本台设置中的音频频率可点 − 或 +，每次调整 50 Hz，范围为 200–2800 Hz。",
+      "en": "Fixed — FT8/FT4 Station Settings could fail to open from the contact screen. The header now shows why a transmission was refused. A released microphone no longer falsely blocks FT transmission. Holding the microphone PTT still takes priority.\n\nChanged — Both FT modes use the radio’s internal clock. The separate FT time-source selector has been removed. Callsign spacing in the header has been corrected for queued, on-air and confirmation messages.\n\nControls — Menu values align in one column and subpage headers show the menu path. In Station Settings, tap − or + to adjust the audio frequency in 50 Hz steps from 200 to 2800 Hz."
+    },
+    {
       "version": "v1.6.0",
       "date": "2026-11-26",
       "regions": [

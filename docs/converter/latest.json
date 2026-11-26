@@ -1,5 +1,168 @@
 {
-  "region": "J140",
-  "version": "v1.6.0",
-  "paused": true
+  "version": "v1.6.1",
+  "size": 12259086,
+  "stock": "2522f62211ad5fdb313e793f94bb0574a22327660bdbde47ba9124f424114e45",
+  "target": "e164686de88f818f720529ec90920a7d7366e0e4e4a20edf1ee0600efcccfc94",
+  "patch": "474d9c71a5cef66eaace2d69d0c4c9f04633e465aa39f48b45a2806f5ff91f5a.xor.gz",
+  "patchHash": "474d9c71a5cef66eaace2d69d0c4c9f04633e465aa39f48b45a2806f5ff91f5a",
+  "notes": {
+    "features": {
+      "zh": [
+        "CW 译码：在电台屏幕上查看译文、速度和波形。",
+        "SSTV 接收：自动识别 23 种模式，可保存和回看图片。",
+        "SSTV 发射：从 SD 卡选图，选择 23 种模式之一，点 SEND 发射。",
+        "FT8／FT4：守听与通联同屏，支持手动、半自动、全自动和同隙多人来叫点选，日志落盘。",
+        "FT8／FT4 通联：主动呼叫 CQ、点选电台应答，或启用自动选台与自动通联。完成的通联追加到 SD 卡 IC-705/FTLOG.ADI。",
+        "APRS：普通 FM 下支持 1200 波特收发、台站和接收记录、双向短消息、手动及自动信标。通过 GPS → GPS TX Mode → APRS 选择仅接收或收发。",
+        "数字语音接收：支持明文 DMR、YSF（C4FM） 和常规 P25 Phase 1。通过 MODE 的 DV 键循环切换，需在 SD 卡 IC-705 目录保留 DMRRX.BIN。"
+      ],
+      "en": [
+        "CW decoding: read decoded text, speed and waveform on the radio.",
+        "SSTV reception: automatically recognize 23 modes, save pictures and browse earlier images.",
+        "SSTV transmission: select a photo from the SD card, choose one of 23 modes and tap SEND.",
+        "FT8/FT4 keeps the receive list visible during contacts, with manual, semi-auto and full-auto operation, caller selection and ADIF logging.",
+        "FT8/FT4 contacts: call CQ, tap a station to reply, or enable automatic caller selection and sequencing. Completed contacts are appended to IC-705/FTLOG.ADI on the SD card.",
+        "APRS: in FM, use 1200-baud APRS RX/TX, station and packet lists, two-way messages and manual or automatic beacons. Select RX Only or RX & TX under GPS → GPS TX Mode → APRS.",
+        "Digital voice reception covers clear DMR, YSF (C4FM) and conventional P25 Phase 1. Cycle through them with the MODE menu’s DV key. Keep DMRRX.BIN in the IC-705 folder on the SD card."
+      ]
+    },
+    "history": [
+      {
+        "version": "v1.6.1",
+        "date": "2026-11-26",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "修复｜FT8／FT4 从通联界面进入本台设置时偶发点按无响应；无法发射时，顶栏显示具体原因。修正手咪未按下时被误判为占用，按住实体手咪仍会阻止 FT 发射。\n\n调整｜FT8 和 FT4 统一使用电台内置时钟，移除 FT 菜单中的“授时来源”。修正顶栏呼号字距，让待发、发送中和待确认报文更易读。\n\n操作｜菜单各行的值对齐到同一列，子页顶栏显示菜单路径。本台设置中的音频频率可点 − 或 +，每次调整 50 Hz，范围为 200–2800 Hz。",
+        "en": "Fixed — FT8/FT4 Station Settings could fail to open from the contact screen. The header now shows why a transmission was refused. A released microphone no longer falsely blocks FT transmission. Holding the microphone PTT still takes priority.\n\nChanged — Both FT modes use the radio’s internal clock. The separate FT time-source selector has been removed. Callsign spacing in the header has been corrected for queued, on-air and confirmation messages.\n\nControls — Menu values align in one column and subpage headers show the menu path. In Station Settings, tap − or + to adjust the audio frequency in 50 Hz steps from 200 to 2800 Hz."
+      },
+      {
+        "version": "v1.6.0",
+        "date": "2026-11-26",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "新增｜FT8／FT4 的自动通联可启用定时休息，从启动本轮全自动起算，含找台和守听，运行 45 分钟后守听 5 分钟，再按原工作类型继续。本台可输入 4、6 或 8 位网格，日志保留完整网格，标准空口报文发送前 4 位。\n\n新增与调整｜全自动选台可包含或排除呼号字头，并按接收顺序、信号或距离优先。未应答目标可设当天或 10／30／60 分钟冷却。发射时可翻看接收列表和日志，接收倒计时失去有效授时时显示 --.-s。\n\n调整｜FT8／FT4 的 A／B 时隙、进度条和接收列表重新排版，QTH、dB、Hz、km 分列左对齐。待发、发送中和待确认报文与接收行使用同款字形。修正待确认时显示上一条报文和原厂截屏画面异常的问题。按住手咪时，FT 会让出发射。\n\n新增与调整｜APRS 接收列表可按日期回看归档，普通 FM 守听可单独静音 APRS。接收弹窗加宽，使用闭合的呼吸边框和原厂定位罗盘，并适配展开频谱。\n\n修复｜改善 DMR、YSF、常规 P25 Phase 1 的弱信号解调。DMR 的开场提示音按组呼、个呼、全呼区分，通话结束时也有提示音，切换数字制式时保留频谱布局。\n\n修复｜解决 SSTV 选图后点 SEND 偶发 NO MEMORY。图片仍在写入时提示稍后重试，避免发到一半被另一张图替换。\n\n安装｜请同时下载本版数字语音 SD 卡包，将 DMRRX.BIN 放入 SD 卡根目录下的 IC-705 文件夹，覆盖旧文件。",
+        "en": "Added — FT8/FT4 automatic operation has an optional 5-minute receive-only rest after 45 minutes of automatic operation, including time spent listening and searching, then resumes the same activity. Enter a 4-, 6- or 8-character station grid. Logs retain the full grid and standard over-the-air messages use the first four characters.\n\nAdded and changed — Filter automatic station selection by callsign prefix, then prioritize reception order, signal strength or distance. Unanswered stations can be skipped for the day or for 10, 30 or 60 minutes. Browse the receive list and log during transmission. The receive countdown shows --.-s when time is unavailable.\n\nChanged — The FT8/FT4 A/B slot indicator, progress bar and receive list have a new layout. QTH, dB, Hz and km each align with their column heading. Queued, on-air and confirmation messages use the receive-list font. Fixed stale confirmation text and stock screenshot rendering. FT yields when microphone PTT is held.\n\nAdded and changed — Browse APRS receive history by date or mute APRS separately while monitoring FM. The wider pop-up has a pulsing border and uses the stock compass for position reports. It also works with the expanded scope.\n\nFixed — Improved weak-signal reception of DMR, YSF and conventional P25 Phase 1. DMR distinguishes group, private and all calls with opening tones and signals the end of a call. Cycling through digital modes preserves the spectrum layout.\n\nFixed — SSTV no longer needs a second picture buffer on SEND, resolving an intermittent NO MEMORY error. When a picture is being written, the radio asks the operator to retry. A queued picture waits until transmission releases the current image.\n\nInstallation — Download the matching digital voice SD ZIP and replace IC-705/DMRRX.BIN on the SD card."
+      },
+      {
+        "version": "v1.5.3",
+        "date": "2026-11-24",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "YSF：改善失真信号的均衡与帧头纠错，修复部分 DN 通话断续的问题。\n\n常规 P25 Phase 1：修正链路控制和加密状态字段的纠错，解决部分明文通话无法正常播放的问题。\n\n数字语音：提高 YSF、P25 和 DMR 的语音播放电平，并压缩强峰。两区均通过录波回放，真机接收、扬声器听感和持续运行待复测。升级时请同时更换本版 SD 卡包里的 DMRRX.BIN。",
+        "en": "YSF: improved equalization and header error correction for distorted signals, fixing intermittent audio on some DN calls.\n\nConventional P25 Phase 1: corrected error handling for link control and encryption status fields, restoring audio on some clear calls.\n\nDigital voice: raised speech playback levels for YSF, P25 and DMR and compressed loud peaks. Both regions passed recorded-signal replay. On-radio reception, speaker audio and sustained operation await a hardware retest. Replace DMRRX.BIN with the file in this release’s SD ZIP when upgrading."
+      },
+      {
+        "version": "v1.5.2",
+        "date": "2026-11-24",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "YSF（Yaesu System Fusion）：原 C4FM 模式的面板标签改为 YSF。修正接收信号失真时 DN 来电信息和语音可能无法解码的问题。\n\n常规 P25 Phase 1：改善失真信号的同步与纠错。自动识别来电 NAC、组呼、个呼和全呼，无需预设组号或个呼号码。\n\n两区均通过录波回放。YSF 与 P25 的真机接收和连续运行仍待验证。升级时请同时换用本版 SD 卡包里的 DMRRX.BIN。",
+        "en": "YSF (Yaesu System Fusion): the mode label changes from C4FM to YSF. Fixed missing DN caller information and audio when the received signal is distorted.\n\nConventional P25 Phase 1: improved synchronization and error correction for distorted signals. The receiver automatically detects the incoming NAC and group, individual and all calls without preset destinations.\n\nBoth regions passed recorded-signal replay. Reception and sustained operation of YSF and P25 on a physical radio still need testing. Replace DMRRX.BIN with the copy in this release’s SD ZIP when upgrading."
+      },
+      {
+        "version": "v1.5.1",
+        "date": "2026-11-24",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "数字语音接收：修正部分接收滤波条件下 C4FM 和常规 P25 Phase 1 无来电信息、无语音的问题。升级时请同时换用本版 SD 卡包里的 DMRRX.BIN。DMR、C4FM 和常规 P25 Phase 1 的接收效果待真机测试。\n\nAPRS：修复收到短消息后点 Reply 打开键盘时卡住的问题。回复输入和实体 EXIT 已通过模拟回放，待真机复测。",
+        "en": "Digital voice RX: fixed missing caller information and audio for C4FM and conventional P25 Phase 1 under some receive filter conditions. When upgrading, replace DMRRX.BIN with the file in this release’s SD ZIP. DMR, C4FM and conventional P25 Phase 1 reception await testing on a physical radio.\n\nAPRS: fixed a keyboard freeze after tapping Reply on an incoming message. Reply input and the physical EXIT key passed emulation and await a hardware retest."
+      },
+      {
+        "version": "v1.5.0",
+        "date": "2026-11-23",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "FT8／FT4 操作页。通联时保留十行守听报文。右侧显示操作模式、通联状态、对台、待发报文、发射时隙、音频频率及发送次数。制式名与 A/B 时隙对齐，进度条显示当前时隙进度。每行显示 22 个报文字符，超长报文用省略号提示。QTH、dB、Hz、km 的表头与内容左对齐，四字地名和五位公里数可完整显示。\n\nFT8／FT4 发射与日志。手动逐报确认，半自动由操作者发起并自动编序，同一时隙有多个来叫时可点选对台。全自动由操作者启动 CQ 或找台，可设发送次数上限，无应答时可停止、换台或回到 CQ，并给未应答台留出冷却时间。支持输入指定呼号、点选刚发出 73／RR73 的对台、查看历史后返回守听，以及用停止键或实体 EXIT 中止发射。完成的通联写入 SD 卡 IC-705/FTLOG.ADI，使用机内时钟时按原厂时区换算成 UTC。\n\n数字语音。新增明文 DMR、C4FM 和常规 P25 Phase 1 接收，从 MODE 菜单的 DV 键循环切换。DMR 支持通话中途接入、来电信息与提示音，播放响度随 AF 调节，接收绿灯按当前频点的有效语音点亮。三个新增模式均用于接收。日版与欧／美版共用卡文件 IC-705/DMRRX.BIN。\n\nAPRS。最近 64 条接收记录可保存到 SD 卡，重启后恢复，支持旧记录及不完整写入后的恢复。有本机位置时，列表可查看收包时的距离与方位。接收弹窗及详情采用统一表头。双向消息、手动与自动信标沿用 v1.4.0。\n\nSSTV 与 CW。保留 23 种 SSTV 模式收发、SD 卡选图、长文件名 JPEG 重发、半屏发射扫描线，以及 CW 译码、速度和波形显示。\n\n转换页与安装。使用对应地区的 Icom 原厂 1.40 DAT 生成 v1.5.0 固件。页面提供数字语音 SD 文件包、配套源码、中英文安装说明及更新日志。将生成的地区 DAT 与解压后的 DMRRX.BIN 放入 SD 卡 IC-705 目录，从电台的 Firmware Update 菜单选择该 DAT。页面可点击三角播放按钮预览新版 FT8／FT4、数字语音和 APRS。",
+        "en": "FT8/FT4 operating screen. The ten-row receive list stays visible during a contact. The sidebar shows the operating mode, contact state, station, pending message, transmit slot, audio frequency and attempt count. The A/B label aligns with the mode name beside a single slot progress bar. Each row fits 22 message characters and marks longer messages with an ellipsis. The QTH, dB, Hz and km columns are left-aligned with their headings and fit four Chinese characters or a five-digit distance.\n\nFT8/FT4 transmission and logging. Manual mode confirms each message. Semi-auto sequences an operator-started contact and lets the operator select among simultaneous callers. Full auto explicitly starts CQ or station search, limits attempts and can stop, move on or return to CQ after no reply, with a cooldown for unanswered stations. Enter a callsign, call a station that just sent 73 or RR73, return from history to live reception, or stop with the on-screen key or physical EXIT. Completed contacts are saved to IC-705/FTLOG.ADI on the SD card. Logs made with the internal clock use the radio's UTC offset.\n\nDigital voice. Cycle the DV key in the MODE menu to receive clear DMR, C4FM or conventional P25 Phase 1. DMR can join calls in progress, display caller information and play call alerts. The AF control sets playback volume. Valid voice on the tuned frequency drives the receive LED. All three modes are receive-only and use the same IC-705/DMRRX.BIN card file in both regions.\n\nAPRS. Save the latest 64 received packets to SD and restore them on restart, including older records and recovery after an incomplete write. The list shows distance and bearing at reception when a local position is available. Receive popups and detail screens share a consistent header. Two-way messaging and manual and automatic beaconing carry forward from v1.4.0.\n\nSSTV and CW. The bundle retains all 23 SSTV receive and transmit modes, SD image selection, long-filename JPEG retransmission, the half-screen transmit scan line, and CW decoding with speed and waveform displays.\n\nConverter and installation. Generate v1.5.0 from the matching regional Icom 1.40 DAT. The page includes a digital voice SD download, accompanying source, bilingual installation instructions and release notes. Put the generated regional DAT and the extracted DMRRX.BIN in the SD card's IC-705 folder, then select the DAT in the radio's Firmware Update menu. Use the triangular play buttons to preview FT8/FT4, digital voice and APRS."
+      },
+      {
+        "version": "v1.4.0",
+        "date": "2026-11-22",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "首次公开机内 1200 波特 FM APRS，支持接收提醒、台站列表、双向短消息、固定周期与 SmartBeaconing 信标。普通单工 FM 的自动信标可在信道空闲时临时切到绑定频点发射，再返回原频点。FT8／FT4 工作期间暂停 APRS。FT 收听页更新了原厂音量窗、归属地与时隙栏，以及灰色 CQ／应答键。SSTV 修复长文件名 JPEG 重发，半屏发射显示扫描线。两区均通过模拟更新和双槽冷启动。移动信标、射频回频及 FT 期间的射频互斥仍待真机确认。",
+        "en": "First public release of on-radio 1200-baud FM APRS, with receive alerts, a station list, two-way messages, fixed-interval beacons and SmartBeaconing. In idle simplex FM, automatic beacons can temporarily tune to the configured channel and return after transmission. APRS pauses during FT8/FT4 operation. The FT receive screen updates the native volume popup, station locations, slot indicator and gray CQ/reply buttons. SSTV can resend JPEGs with long filenames and shows a scan line during half-screen transmission. Both regions passed simulated updates and cold boots from both slots. Mobile beacons, on-air retuning and APRS radio silence during FT operation await hardware confirmation."
+      },
+      {
+        "version": "v1.3.2",
+        "date": "2026-11-21",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "修正 SSTV 待机时隐藏的音量峰值反复请求界面重绘。模拟回放中，32 次峰值变化触发的多余重绘从 32 次降到 0；收图状态及进度仍会刷新。实际频谱流畅度待真机复测。",
+        "en": "Fixed redundant screen redraw requests from the hidden audio peak meter in SSTV standby. In emulation, 32 peak changes caused zero extra redraws, down from 32. Receive status and image progress still update. Spectrum smoothness awaits hardware confirmation."
+      },
+      {
+        "version": "v1.3.1",
+        "date": "2026-11-21",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "两版均修正部分 SD 卡就绪状态下 FT 本台呼号无法保存或读回的问题。输入呼号后先在键盘点「确定」，再在本台设置点「保存」。欧／美版同时修正通联日志停在「待存卡」的问题，新增 Check SD、SD busy 和 SD error 提示。两版模拟冷启动读回呼号、欧版模拟日志写入均通过，实体卡待复测。",
+        "en": "Both regions now recognize a second valid SD state when saving and loading the FT station callsign. Confirm the callsign on the keyboard, then tap Save in station settings. E140 also fixes pending QSO log retries and adds Check SD, SD busy and SD error messages. Callsign recovery and E140 logging passed in emulation. Physical card verification is pending."
+      },
+      {
+        "version": "v1.3.0",
+        "date": "2026-11-20",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "首次公开机内 FT8／FT4 收发、中文操作和 ADIF 日志。TX2j 对齐顶栏并减少重复绘字，增加接收音频中断及暂停提示。模拟遥控指令与录音单独回放时，FT8 连续六隙、FT4 连续八隙均有解码。实体转轮手感与 ESP32 遥控偶发停更仍待实测。欧／美版 1.40 现可在浏览器生成对应固件。已移植 CW 译码、SSTV 收发与图片存取、FT8／FT4 收发与 ADIF 日志。欧版已完成本地仿真验证，实体电台安装与射频收发待反馈。",
+        "en": "First public release of on-radio FT8/FT4 RX/TX, Chinese controls and ADIF logging. TX2j aligns the header, skips repeated text draws and reports missing or paused RX audio. A replay with remote commands decoded six consecutive FT8 slots and eight FT4 slots. Dial responsiveness and intermittent stalls with an ESP32 remote still need hardware testing. The converter now builds European/US 1.40 firmware. The port includes CW decoding, SSTV RX/TX and picture storage, and FT8/FT4 RX/TX with ADIF logging. Tested in emulation. Installation on a physical E140 radio and on-air operation await confirmation."
+      },
+      {
+        "version": "v1.2.0",
+        "date": "2026-11-19",
+        "regions": [
+          "J140"
+        ],
+        "zh": "发射模式由 2 种扩展到 23 种，与接收模式对齐。全部模式已通过电脑端菜单和整帧音频验证，新增模式待逐项真机互收。",
+        "en": "Expanded transmission from 2 to 23 modes, matching the receiver. All modes passed emulated menu and full-frame audio checks. On-air testing of each added mode is pending."
+      },
+      {
+        "version": "v1.1.1",
+        "date": "2026-11-19",
+        "regions": [
+          "J140"
+        ],
+        "zh": "改善 Robot 36 弱信号续画，减少误报发射忙，并将 SEND 移到下方。",
+        "en": "Improved Robot 36 frame continuity during fades, reduced false TX busy indications and moved SEND to the lower button."
+      },
+      {
+        "version": "v1.1.0",
+        "date": "2026-11-19",
+        "regions": [
+          "J140"
+        ],
+        "zh": "增加屏幕一键发图，无需手咪 PTT。",
+        "en": "Added one-tap transmission from the screen without a microphone PTT."
+      },
+      {
+        "version": "v1.0.0",
+        "date": "2026-11-19",
+        "regions": [
+          "J140"
+        ],
+        "zh": "接入原厂 SD 卡选图，首次合入 Robot 36 和 Martin M1 发射。",
+        "en": "Integrated the native SD card picture picker and added Robot 36 and Martin M1 transmission."
+      }
+    ]
+  }
 }

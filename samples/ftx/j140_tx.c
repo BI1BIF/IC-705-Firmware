@@ -116,8 +116,8 @@ __attribute__((section(".ftx_controls"),noinline)) static void make_message(void
 static const char *foreign_tx(void) {
     unsigned own = atomic_load(&stage) >= KEY ? 0x8000u : 0u;
     unsigned flags = U8(0x203806f4);
-    /* The debounced microphone request precedes DSP TX acknowledgement. */
-    if (U8(0x203809c4) & 0xc1) return "Radio TX inhibit";
+    /* Use the native sampled MICPTT input along with the radio inhibit flags. */
+    if ((U8(0x203809c4) & 0xc0) || U8(0x203e1e6b)) return "Radio TX inhibit";
     if (flags & 0x20) return "Remote PTT";
     if (U32(0x203809b0) & ~own) return "Other TX request";
     if (!own && ((flags & 128) || (U8(0x203809a1) & 16))) return "Radio TX active";
