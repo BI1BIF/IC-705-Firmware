@@ -72,7 +72,7 @@ async function main() {
       const stop = page.getByRole("button", {name: "停止预览"});
       assert.equal(await picker.inputValue(), "digital");
       for (const [kind, asset] of Object.entries({
-        digital: "digital-voice-v152", ftx: "ftx-v2-native", aprs: "aprs-v150", radio: "radio-demo",
+        digital: "digital-voice-v160", ftx: "ftx-v160", aprs: "aprs-v160", radio: "radio-v160",
       })) {
         await picker.selectOption(kind);
         const cover = "images/" + asset + "-cover.png";
@@ -80,7 +80,8 @@ async function main() {
         assert.equal(await screen.getAttribute("src"), cover);
         assert(await page.locator("#" + kind + "-steps").isVisible());
         await page.waitForFunction(() => document.querySelector("#demo-screen").complete
-          && document.querySelector("#demo-screen").naturalWidth === 480);
+          && document.querySelector("#demo-screen").naturalWidth === 480
+          && document.querySelector("#demo-screen").naturalHeight === 272);
         if (kind === "digital" && preview) {
           await page.locator(".walkthrough").screenshot({path: path.join(preview, "demo-preview.png")});
         }
@@ -91,7 +92,8 @@ async function main() {
         await stop.waitFor();
         assert.equal(await screen.getAttribute("src"), gif);
         await page.waitForFunction(() => document.querySelector("#demo-screen").complete
-          && document.querySelector("#demo-screen").naturalWidth === 480);
+          && document.querySelector("#demo-screen").naturalWidth === 480
+          && document.querySelector("#demo-screen").naturalHeight === 272);
         demoAssets[kind] = gif;
         await stop.click();
         assert.equal(await screen.getAttribute("src"), cover);

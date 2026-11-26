@@ -9,7 +9,7 @@ nav,.switch,.file{display:flex;align-items:center;gap:14px}.switch{position:rela
 .walkthrough select { max-width: 100%; border: 1px solid #82988a; border-radius: 4px; padding: 4px 6px; background: #fff; color: inherit; font: inherit; }
 #demo-toggle { position: relative; width: 100%; padding: 0; background: #090e0c; overflow: hidden; }
 #demo-toggle:focus-visible { outline: 3px solid #205f48; outline-offset: 3px; }
-#demo-screen { display: block; width: 100%; height: auto; aspect-ratio: 480 / 304; object-fit: contain; }
+#demo-screen { display: block; width: 100%; height: auto; aspect-ratio: 480 / 272; object-fit: contain; }
 .demo-control { position: absolute; inset: 0; display: grid; justify-items: center; align-content: center; gap: 7px; background: #06110cb3; }
 .demo-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #e5f5da; color: #163c32; }
 .demo-icon::before { content: ""; margin-left: 4px; border: solid transparent; border-width: 12px 0 12px 19px; border-left-color: currentColor; }

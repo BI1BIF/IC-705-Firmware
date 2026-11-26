@@ -6,10 +6,13 @@
 
 extern void dmr_audio_reset(void);
 extern int dmr_audio_frame(const uint8_t voice[9]);
+extern void dmr_start_alert(unsigned kind);
+extern int dmr_end_alert(void);
 
 enum { BLOCKS=128, SAMPLES=36 };
 static struct block { unsigned hz, seq; int16_t pcm[SAMPLES]; } fifo[BLOCKS];
-static unsigned written, read_count, expected, speech_header;
+static unsigned written, read_count, expected, speech_header, last_voice;
+static unsigned speech_open, closing;
 /* Published after flushing the old speaker queue. Read in the DMA interrupt. */
 static volatile unsigned frequency;
 static dmr_frontend radio;
@@ -20,7 +23,7 @@ void dmr_core_switch(unsigned mode) {
     memset(&radio,0,sizeof(radio));
     digital_reset();
     dmr_audio_reset();
-    expected=frequency=speech_header=0;
+    expected=frequency=speech_header=speech_open=closing=0;
     digital_mode=mode;
 }
 
@@ -45,10 +48,16 @@ static void voice(void *unused,const uint8_t frames[27])
     (void)unused;
     if (speech_header!=radio.call_id) {
         dmr_audio_reset();
-        digital_alert(dmr_kind(dmr_frontend_status(&radio)));
+        dmr_start_alert(dmr_kind(dmr_frontend_status(&radio)));
         speech_header=radio.call_id;
+        speech_open=closing=0;
     }
-    for (unsigned pos=0;pos<27;pos+=9) dmr_audio_frame(frames+pos);
+    for (unsigned pos=0;pos<27;pos+=9) {
+        if(dmr_audio_frame(frames+pos)>=0) {
+            speech_open=1;
+            last_voice=expected;
+        }
+    }
 }
 
 void dmr_core_work(void)
@@ -61,12 +70,22 @@ void dmr_core_work(void)
             memset(&radio,0,sizeof(radio));
             digital_reset();
             dmr_audio_reset();
-            speech_header=0;
+            speech_header=speech_open=closing=0;
             frequency=b->hz;
         }
         expected=b->seq+1;
         if(digital_mode>=RX_YSF) digital_block(digital_mode,b->pcm);
-        else dmr_frontend_block(&radio,b->pcm,voice,0);
+        else {
+            dmr_frontend_block(&radio,b->pcm,voice,0);
+            dmr_radio *status=dmr_frontend_status(&radio);
+            /* Debounce lost bursts. A checked terminator can close immediately.
+               The queue keeps the chime behind the final decoded speech. */
+            if(speech_open && !status->active && (status->ended || expected-last_voice>=320)) {
+                speech_open=0;
+                closing=1;
+            }
+            if(closing && dmr_end_alert()) closing=0;
+        }
         __atomic_store_n(&read_count,++r,__ATOMIC_RELEASE);
     }
 }

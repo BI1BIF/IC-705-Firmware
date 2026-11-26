@@ -12,7 +12,7 @@ from tools.verify_705_dmr_call_types import air, gen
 from tools.verify_705_dmr_multimode import replay
 
 
-def check(package):
+def check(package, *, weak=False):
     source = 7654321
     rng = np.random.default_rng(25705)
     segments = []
@@ -29,8 +29,16 @@ def check(package):
             bits = gen.p25_ldu_bits(duid, control, rng, gen.p25_imbe_silent_bits())
         if damaged_nid:
             # Two information errors and four parity errors, excluding status dibits.
-            for pos in (51, 56, 76, 81, 87, 100):
+            positions=(51,56,76,81,87,100,104,106,109,111,112) if weak else (51,56,76,81,87,100)
+            for pos in positions:
                 bits[pos] ^= 1
+        if weak and row and rs_errors:
+            # Two additional bad symbols identified by the inner Hamming
+            # check. With a half-size error budget these need erasure hints.
+            for a,b in (gen.P25_LDU_HEX_SPANS[4],gen.P25_LDU_HEX_SPANS[5]):
+                valid=[pos for pos in range(a,b) if pos%72<70]
+                bits[valid[0]]^=1
+                bits[valid[2]]^=1
         segments.extend((np.zeros(24000, dtype="<i2"), air(gen.bits_to_levels(bits * 2))))
         if row:
             expected_rows.add(row)
@@ -43,8 +51,8 @@ def check(package):
     ):
         lc = bytes((fmt, mfid, 0)) + target.to_bytes(3, "big") + source.to_bytes(3, "big")
         label = "TO" if kind == "PVT" else "TG"
-        append(nac, 5, lc, f"{kind} NAC {nac:03X} ID {source} {label} {target}", damaged_nid=True, rs_errors=6)
-    append(0x737, 10, bytes(9) + bytes((0x80, 0, 0)), "NAC 737", rs_errors=4)
+        append(nac, 5, lc, f"{kind} NAC {nac:03X} ID {source} {label} {target}", damaged_nid=True, rs_errors=5 if weak else 6)
+    append(0x737, 10, bytes(9) + bytes((0x80, 0, 0)), "NAC 737", rs_errors=3 if weak else 4)
     append(0x737, 10, bytes(9) + bytes((0x84, 0, 0)), None, rs_errors=4)
     append(0x291, 10, bytes(9) + bytes((0x80, 0, 0)), None, rs_errors=5)
     append(0xA11, 5, bytes((3, 1, 64, 0, 0, 1, 0, 0, 2)), None)
@@ -56,4 +64,6 @@ def check(package):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
-    check(parser.parse_args().package.resolve())
+    parser.add_argument("--weak", action="store_true")
+    args=parser.parse_args()
+    check(args.package.resolve(),weak=args.weak)

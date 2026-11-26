@@ -1,8 +1,8 @@
 # IC-705 固件 · IC-705 Firmware
 
-BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.5.3** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
+BI1BIF 的非官方 IC-705 固件研究项目。转换页支持 Icom 1.40 日版（J140）与欧／美版（E140），当前整包补丁 **v1.6.0** 包含 CW、SSTV、FT8／FT4、APRS 和数字语音接收。选择对应电台的原厂 DAT，浏览器会识别地区并在本地生成固件。
 
-BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.5.3** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
+BI1BIF’s independent firmware research for the Icom IC-705. Patch **v1.6.0** includes CW, SSTV, FT8/FT4, APRS and digital voice reception for Japanese (J140) and European/US (E140) Icom 1.40 firmware. Select the original DAT for your radio to detect its region and build the firmware locally in your browser.
 
 **[打开固件转换页 · Open firmware converter](https://bi1bif.github.io/IC-705-Firmware/)**
 
@@ -38,6 +38,36 @@ Operators have tested CW and SSTV on hardware with TX3. All 23 TX4 modes passed 
 补丁统一使用 **v主版本.功能版本.修订号**。重大升级递增第一位，新增功能递增第二位，修复递增第三位。日版 J140 和欧／美版 E140 的同一次更新共用一个版本号。
 
 Patch releases use **vMAJOR.MINOR.PATCH**. Major upgrades, new features and fixes increment the first, second and third numbers respectively. Regional builds of the same release share a version.
+
+**2026-11-26 · v1.6.0 · J140 / E140**
+
+新增｜FT8／FT4 的自动通联可启用定时休息，从启动本轮全自动起算，含找台和守听，运行 45 分钟后守听 5 分钟，再按原工作类型继续。本台可输入 4、6 或 8 位网格，日志保留完整网格，标准空口报文发送前 4 位。
+
+新增与调整｜全自动选台可包含或排除呼号字头，并按接收顺序、信号或距离优先。未应答目标可设当天或 10／30／60 分钟冷却。发射时可翻看接收列表和日志，接收倒计时失去有效授时时显示 --.-s。
+
+调整｜FT8／FT4 的 A／B 时隙、进度条和接收列表重新排版，QTH、dB、Hz、km 分列左对齐。待发、发送中和待确认报文与接收行使用同款字形。修正待确认时显示上一条报文和原厂截屏画面异常的问题。按住手咪时，FT 会让出发射。
+
+新增与调整｜APRS 接收列表可按日期回看归档，普通 FM 守听可单独静音 APRS。接收弹窗加宽，使用闭合的呼吸边框和原厂定位罗盘，并适配展开频谱。
+
+修复｜改善 DMR、YSF、常规 P25 Phase 1 的弱信号解调。DMR 的开场提示音按组呼、个呼、全呼区分，通话结束时也有提示音，切换数字制式时保留频谱布局。
+
+修复｜解决 SSTV 选图后点 SEND 偶发 NO MEMORY。图片仍在写入时提示稍后重试，避免发到一半被另一张图替换。
+
+安装｜请同时下载本版数字语音 SD 卡包，将 DMRRX.BIN 放入 SD 卡根目录下的 IC-705 文件夹，覆盖旧文件。
+
+Added — FT8/FT4 automatic operation has an optional 5-minute receive-only rest after 45 minutes of automatic operation, including time spent listening and searching, then resumes the same activity. Enter a 4-, 6- or 8-character station grid. Logs retain the full grid and standard over-the-air messages use the first four characters.
+
+Added and changed — Filter automatic station selection by callsign prefix, then prioritize reception order, signal strength or distance. Unanswered stations can be skipped for the day or for 10, 30 or 60 minutes. Browse the receive list and log during transmission. The receive countdown shows --.-s when time is unavailable.
+
+Changed — The FT8/FT4 A/B slot indicator, progress bar and receive list have a new layout. QTH, dB, Hz and km each align with their column heading. Queued, on-air and confirmation messages use the receive-list font. Fixed stale confirmation text and stock screenshot rendering. FT yields when microphone PTT is held.
+
+Added and changed — Browse APRS receive history by date or mute APRS separately while monitoring FM. The wider pop-up has a pulsing border and uses the stock compass for position reports. It also works with the expanded scope.
+
+Fixed — Improved weak-signal reception of DMR, YSF and conventional P25 Phase 1. DMR distinguishes group, private and all calls with opening tones and signals the end of a call. Cycling through digital modes preserves the spectrum layout.
+
+Fixed — SSTV no longer needs a second picture buffer on SEND, resolving an intermittent NO MEMORY error. When a picture is being written, the radio asks the operator to retry. A queued picture waits until transmission releases the current image.
+
+Installation — Download the matching digital voice SD ZIP and replace IC-705/DMRRX.BIN on the SD card.
 
 **2026-11-24 · v1.5.3 · J140 / E140**
 
@@ -159,7 +189,7 @@ First public release of on-radio FT8 (15 s) and FT4 (7.5 s) RX/TX. Select GPS or
 
 </details>
 
-[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [FT8／FT4 操作 GIF](docs/images/ftx-v2-native.gif) · [数字语音 / Digital voice GIF](docs/images/digital-voice-v152.gif) · [APRS 操作 GIF](docs/images/aprs-v150.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
+[操作与验证记录 · Operation and test notes](docs/FTX-TX2j.md) · [FT8／FT4 操作 GIF](docs/images/ftx-v160.gif) · [数字语音 / Digital voice GIF](docs/images/digital-voice-v160.gif) · [APRS 操作 GIF](docs/images/aprs-v160.gif) · [CW／SSTV 操作 GIF](docs/images/radio-v160.gif) · [第三方许可 · Third-party notices](docs/converter/ftx-notices.txt)
 
 ## 微信交流群 · WeChat test group
 

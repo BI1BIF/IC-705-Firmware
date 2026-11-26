@@ -6,7 +6,7 @@
 /* Resolved to the installed v1.4.0 callbacks for the selected region. */
 extern unsigned ft_touch(void);
 extern void ft_frame(void), ft_input(void), previous_prepare(void);
-extern void mode_close(void), mode_select(unsigned action, unsigned key);
+extern void mode_pop(void), mode_select(unsigned action, unsigned key);
 extern void data_toggle(void), beep(unsigned);
 extern unsigned stock_mode_text(char *, unsigned, unsigned);
 extern unsigned aprs_strip_visible(unsigned);
@@ -35,6 +35,12 @@ static void refresh(void)
 static int mode_menu(void)
 {
     return BYTE(0x204bab5d)==1 && BYTE(0x203e84c9)==2 &&
+           !BYTE(0x203e84ca) && !BYTE(0x203807dd);
+}
+
+static int spectrum_page(void)
+{
+    return BYTE(0x204bab5d)==1 && BYTE(0x203e84c9)==9 &&
            !BYTE(0x203e84ca) && !BYTE(0x203807dd);
 }
 
@@ -119,7 +125,8 @@ unsigned dmr_ui_touch(void)
         }
         held=1;
         wanted=current+1;
-        mode_close();
+        /* MODE is an overlay. Return to the previous page, which can be SCOPE. */
+        mode_pop();
         if(!current) {
             mode_select(2,4);
             if (BYTE(0x203e2128)>>4==7 && (BYTE(0x203e2129)&1)) data_toggle();
@@ -154,7 +161,7 @@ void dmr_ui_input(void)
         (notice && status_area() && !menu_seen && BYTE(0x20380431)==9 &&
         !BYTE(0x204bd028) && !BYTE(0x204bd19e))) stop();
     else if (retries) {
-        if (!status_area() || retry_hz!=*(volatile unsigned *)0x20380714 ||
+        if ((!status_area() && !spectrum_page()) || retry_hz!=*(volatile unsigned *)0x20380714 ||
             (BYTE(0x203e2128)>>4!=9 && BYTE(0x203e2128)>>4!=7)) stop();
         else if (TICKS-last_refresh>=125) {
             --retries;

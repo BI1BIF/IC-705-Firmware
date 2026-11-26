@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=6"><script type="module" src="converter/app.js?v=12"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=7"><script type="module" src="converter/app.js?v=13"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
@@ -20,15 +20,15 @@
 </select>
 <p id="digital-steps" data-en="In MODE, tap DV to cycle through DMR, YSF and P25. The demo shows call information during reception.">在 MODE 里点按 DV 切换 DMR、YSF 和 P25，查看接收时显示的来话信息。</p>
 <div id="ftx-steps" hidden>
-<p data-en="Open MODE → FT8/4. The receive list stays visible while you choose a caller and confirm or transmit the next message.">从 MODE → FT8/4 进入，查看守听与通联同屏，点选来叫、确认下一报或自动发射。</p>
-<p class="hint" data-en="Open Menu → Auto to set the operating mode, attempts and behavior after no answer.">在「菜单 → 自动选台」设置操作模式、发送次数和无应答处理。</p>
+<p data-en="Open MODE → FT8/4 and select FT8 or FT4. Watch a CQ move from queued to on air. Choose a caller and see the next message on the confirmation screen.">从 MODE → FT8/4 进入，选 FT8 或 FT4。查看 CQ 从排队到发射的进度，点选来叫后可在确认界面看到下一报。</p>
+<p class="hint" data-en="Open Menu → Auto operation to set retries and what happens when stations do not answer. Open History to review past contacts.">在「菜单 → 自动操作」设置尝试次数和无应答处理，也可打开历史查看通联记录。</p>
 </div>
-<p id="aprs-steps" hidden data-en="Open QUICK → APRS RX List to browse received packets and see their bearings, distances and message details.">从 QUICK → APRS RX List 查看接收记录、方位与距离，并打开位置或短消息详情。</p>
+<p id="aprs-steps" hidden data-en="Open QUICK → APRS RX List to browse packets and open their details or reply to a message. Open APRS Archive to browse earlier packets by date.">从 QUICK → APRS RX List 查看接收记录、打开详情或回复短消息。从 APRS Archive 按日期查看历史记录。</p>
 <div id="radio-steps" hidden><p data-en="In CW mode, press MENU → KEYER → CW DECODE to see the receiver decode CQ.">在 CW 模式下，按 MENU → KEYER → CW DECODE，查看模拟接收信号译出的 CQ。</p>
-<p data-en="From the home screen, press MENU → page 2 → PICTURE → SSTV. The RX preview plays a Robot 36 receive sequence.">从主界面按 MENU → 第 2 页 → PICTURE → SSTV，查看 Robot 36 图像逐行接收。</p></div>
+<p data-en="From the home screen, press MENU → page 2 → PICTURE → SSTV. Tap RX to see a Robot 36 image fill in. To send, tap TX, choose a JPEG on the SD card, tap SET, then return to PICTURE and tap SEND.">从主界面按 MENU → 第 2 页 → PICTURE → SSTV。点 RX 观看 Robot 36 图像逐行接收。发图时点 TX，从 SD 卡选 JPEG，点 SET 确认，返回 PICTURE 后点 SEND。</p></div>
 </div>
 <button id="demo-toggle" type="button" aria-describedby="digital-steps">
-  <img id="demo-screen" src="images/digital-voice-v152-cover.png" width="480" height="304" alt="">
+  <img id="demo-screen" src="images/digital-voice-v160-cover.png" width="480" height="272" alt="">
   <span class="demo-control">
     <span class="demo-icon" aria-hidden="true"></span>
     <span id="demo-play" data-en="Play preview">播放预览</span>
@@ -68,7 +68,7 @@
     <ul class="install-paths">
       <li><span data-en="Both regions">两区通用</span> <code>IC-705/DMRRX.BIN</code></li>
     </ul>
-    <p><a id="digital-card" href="converter/digital-voice-sd.zip?v=v1.5.3" download data-en="Download digital voice SD files (ZIP)">下载数字语音 SD 卡文件（ZIP）</a> · <a href="converter/digital-voice-source.zip?v=v1.5.3" data-en="Digital voice sources and licenses">数字语音源码与许可</a></p>
+    <p><a id="digital-card" href="converter/digital-voice-sd.zip?v=v1.6.0" download data-en="Download digital voice SD files (ZIP)">下载数字语音 SD 卡文件（ZIP）</a> · <a href="converter/digital-voice-source.zip?v=v1.6.0" data-en="Digital voice sources and licenses">数字语音源码与许可</a></p>
   </li>
   <li>
     <strong data-en="Run the firmware update">在电台上更新固件</strong>

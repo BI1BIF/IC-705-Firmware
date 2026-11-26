@@ -71,7 +71,7 @@ for (const code of ["zh","en"]) el(code).onclick = () => {
 };
 render();
 
-const demos = {digital: "digital-voice-v152", ftx: "ftx-v2-native", aprs: "aprs-v150", radio: "radio-demo"};
+const demos = {digital: "digital-voice-v160", ftx: "ftx-v160", aprs: "aprs-v160", radio: "radio-v160"};
 const demoToggle = el("demo-toggle");
 function showDemo(play) {
   const kind = el("demo-kind").value;

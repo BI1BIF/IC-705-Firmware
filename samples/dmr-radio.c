@@ -58,7 +58,7 @@ static int link_payload(const uint8_t *dibits, unsigned kind, uint8_t word[12]) 
     unsigned corrected=0;
     for (unsigned i=0; i<196; ++i)
         corrected += m[(13*i)%196] != bit(dibits, i<98 ? i : i+68);
-    if (corrected>4) return 0;
+    if (corrected>8) return 0;
     for (unsigned i=0; i<96; ++i) {
         unsigned idx=i+3;
         if ((i&7)==0) word[i/8]=0;
@@ -233,7 +233,7 @@ static int accept_burst(dmr_radio *s, const uint8_t dibits[132], unsigned family
         inner+=(dibits[i]&1)==0;
     }
     unsigned diff=distance(signs^ref);
-    if (diff<=2 && inner<=3) {
+    if (diff<=3 && inner<=4) {
         if (!control(s,dibits)) {
             /* Voice A has the complementary sync. At acquisition the sync
                alone cannot distinguish an inverted data burst from voice. */
@@ -274,7 +274,7 @@ static int accept_burst(dmr_radio *s, const uint8_t dibits[132], unsigned family
             return 1;
         }
         if (!s->active) return 0;
-        if (diff>=22 && inner<=3) s->voice_index=0;
+        if (diff>=21 && inner<=4) s->voice_index=0;
         else {
             if (s->voice_index>=5) return 0;
             unsigned expected=s->color_code*8 + lcss[++s->voice_index];
@@ -343,7 +343,7 @@ void dmr_radio_feed(dmr_radio *s, const int16_t *pcm, unsigned count,
         }
         for (unsigned k=0; k<4; ++k) {
             unsigned diff=signs ^ data_signs[k];
-            unsigned inverted=diff>>23;
+            unsigned inverted=distance(diff)>12;
             if (inverted) diff ^= 0xffffff;
             if (diff && (diff & (diff-1))) continue;
             s->pending=k+1;

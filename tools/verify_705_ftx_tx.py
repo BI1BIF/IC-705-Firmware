@@ -427,7 +427,12 @@ def replay(dat, ft4, *, e140=None, output=None, stock_rtc_offset=False):
     request(False)
     assert get("stage") == 0
     clock(start + 3 * period)
-    c.mem_write(0x203809c4,b"\x01")  # raw mic sample, no published TX owner
+    c.mem_write(0x203809c4,b"\x01")  # Debounced microphone PTT, before DSP acknowledgement.
+    tap(442, 104)
+    request(False)
+    assert get("stage") == 0
+    c.mem_write(0x203809c4,b"\0")
+    choose_station()
     tap(442, 104)
     start += 4 * period
     clock(start)
@@ -448,7 +453,6 @@ def replay(dat, ft4, *, e140=None, output=None, stock_rtc_offset=False):
     feed_dsp_tx(c, False, rom(0x200D4A28))
     request(False)
     route(False)
-    c.mem_write(0x203809c4,b"\0")
     assert bool(get("sequence_on")) == (not ft4) and get("stage") == 0
     if not ft4:
         # Manual CQ also repeats. A fresh answer cancels the reserved CQ and
@@ -717,7 +721,7 @@ def replay(dat, ft4, *, e140=None, output=None, stock_rtc_offset=False):
         "stop_and_retune": True,
         "busy_split_missing_feedback_and_stale_clock": True,
         "settings_clock_and_return_to_preview":True,
-        "raw_mic_sample_during_complete_tx":True,
+        "debounced_mic_prevents_ft_tx_before_dsp_ack":True,
         "wav_sha256": sha256(wav.read_bytes()).hexdigest(),
     }
 

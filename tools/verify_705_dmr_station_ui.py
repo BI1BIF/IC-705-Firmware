@@ -54,7 +54,7 @@ def run(region):
     test(region,folder,output,meta,cold_ram(region,folder,output,meta))
 
 
-def test(region,folder,output,meta,ram,*,aprs_elf=None):
+def test(region,folder,output,meta,ram,*,aprs_elf=None,scope_probe=False):
     dat=(folder/f"705{region}140.dat").read_bytes()
     sd=(folder/"DMRRX.BIN").read_bytes()
     assert sha256(dat).hexdigest()==meta["sha256"] and sha256(sd).hexdigest()==meta["card_sha256"]
@@ -122,6 +122,62 @@ def test(region,folder,output,meta,ram,*,aprs_elf=None):
         c.mem_write(BEEP_ENABLE,bytes([enabled]))
         call(c,g.rom(0x2000e73c),0)
         tones.clear()
+    if scope_probe:
+        files[sdpath]=sd
+        menu(); tap(130,242); snap("dv","DV")
+        initial=bytes(c.mem_read(RAM,RAM_BYTES))
+        regs=c.context_save()
+        traces={}
+        def screen_state():
+            return [read(0x203e84c9,1),read(0x203e84d3,1),read(0x204bab61,1)]
+        calls=[]
+        def capture(cpu,at,*_):
+            calls.append([hex(at),screen_state(),cpu.reg_read(arm.UC_ARM_REG_R0),cpu.reg_read(arm.UC_ARM_REG_R1)])
+        for at in (sy["dmr_ui_touch"]&~1,sy["mode_select"],g.rom(0x200f1600),g.rom(0x200f0954)):
+            c.hook_add(uc.UC_HOOK_CODE,capture,begin=at,end=at)
+        for size in ("off","mini","normal","expanded"):
+            c.mem_write(RAM,initial); c.context_restore(regs)
+            clear_tones(0)
+            if size=="mini": g._press_key(1,0)
+            if size in ("normal","expanded"):
+                g.press_menu(); snap(size+"-menu","MENU")
+                tap(52,80)
+                if size=="expanded": tap(438,254)
+            snap(size+"-initial","DV")
+            start=screen_state()
+            assert start=={"off":[0,0,0],"mini":[0,1,2],"normal":[9,0,0],"expanded":[9,0,1]}[size]
+            transitions=[]
+            for label in ("DMR","YSF","P25","DV"):
+                calls.clear()
+                menu()
+                menu_state=screen_state()
+                tap(130,242)
+                expected=(label,"SPECTRUM SCOPE") if "mode_pop" in sy and start[0]==9 else (label,)
+                snap(size+"-"+label,*expected)
+                transitions.append(dict(mode=label,menu=menu_state,after=screen_state(),calls=calls.copy()))
+            traces[size]=dict(before=start,steps=transitions)
+        if "mode_pop" in sy:
+            assert all(step["after"]==view["before"] for view in traces.values() for step in view["steps"]), traces
+            # Begin a separate deferred entry with no retired worker in flight.
+            c.mem_write(RAM,initial); c.context_restore(regs)
+            clear_tones(0)
+            g.press_menu(); snap("deferred-menu","MENU")
+            tap(52,80); tap(438,254)
+            menu()
+            select=sy["mode_select"]&~1
+            def defer(cpu,*_):
+                cpu.reg_write(arm.UC_ARM_REG_PC,cpu.reg_read(arm.UC_ARM_REG_LR))
+            hook=c.hook_add(uc.UC_HOOK_CODE,defer,begin=select,end=select)
+            try: tap(130,242)
+            finally: c.hook_del(hook)
+            snap("expanded-deferred","DV","SPECTRUM SCOPE","FM mode not ready")
+            call(c,sy["mode_select"],2,4)
+            c.mem_write(0x20381e08,pack("<I",(read(0x20381e08)+125)&0xffffffff))
+            call(c,sy["dmr_ui_input"],instruction_limit=50_000_000,timeout_us=0)
+            snap("expanded-retry","DMR","SPECTRUM SCOPE")
+            assert screen_state()==[9,0,1]
+        (output/"scope-cycle.json").write_text(json.dumps(dict(dat=meta["sha256"],layouts=traces),indent=2))
+        return traces
     def start_dmr():
         menu(); tap(130,242); snap("stock-dv","DV")
         assert read(0x203e2128,1)>>4==9

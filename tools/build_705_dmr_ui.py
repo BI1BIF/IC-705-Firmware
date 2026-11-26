@@ -26,7 +26,7 @@ def ui_imports(region, aprs=None):
         ft_input=0x2037184d, ft_touch=0x2037433d, ft_frame=0x203719e5,
         previous_prepare=0x2037f858 + 8 + signed_offset*4,
         paint_begin=0x2037c9f5, paint_finish=0x2037c6d9,
-        fill=0x2037c625, label=0x2037c999, mode_close=0x200f192c+late,
+        fill=0x2037c625, label=0x2037c999, mode_pop=0x200f0954+late,
         stock_mode_text=0x20178938+late,
         mode_select=0x20080a34+early, data_toggle=0x20080e50+early, beep=0x2007d478+early,
     )

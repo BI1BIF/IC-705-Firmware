@@ -42,6 +42,14 @@ def reference_alert(data, starts):
             samples[start+t]+=int(sine[t%8]*min(t,16,279-t)/16)
     return samples.clip(-32768,32767).astype("<i2").tobytes()
 
+def chime_note(length, hz):
+    sine=(0,293,574,833,1061,1247,1386,1471,1500,1471,1386,1247,1061,833,574,293)
+    sine=sine+tuple(-s for s in sine)
+    return [int(sine[(t*hz*32//8000)%32]*min(t,24,length-1-t)/24) for t in range(length)]
+
+def tail_chime():
+    return np.asarray(chime_note(192,960)+[0]*48+chime_note(240,720),dtype="<i2").tobytes()
+
 def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=1, package_dir=OUT, digital=None, retune=False):
     folder=package_dir/region
     dat=(folder/f"705{region}140.dat").read_bytes()
@@ -360,7 +368,18 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
     assert stat()==expected_status,stat()
     input_blocks, varying_blocks=struct.unpack("<2I",cpu.mem_read(sy["status"]+20,8))
     assert input_blocks==len(samples)//36 and 0<varying_blocks<=input_blocks
-    expected_samples=field_repeats*522*160 if field else len(reference)//2
+    speech_samples=field_repeats*522*160 if field else len(reference)//2
+    chimes=[]
+    if "dmr_end_alert" in cs:
+        tone=playback_reference(tail_chime())
+        start_index=0
+        for _ in range(2*field_repeats if field else 1):
+            at=captured.find(tone,start_index)
+            assert at>=0 and at%2==0, (region, len(captured), chimes)
+            chimes.append(at//2)
+            start_index=at+len(tone)
+        assert captured.find(tone,start_index)<0
+    expected_samples=speech_samples+480*len(chimes)
     assert {0,2,3}<=phases and core_word("produced")==core_word("consumed")==expected_samples
     panel_audio=struct.unpack("<2I",cpu.mem_read(sy["status"]+28,8))
     assert panel_audio==(expected_samples,expected_samples), panel_audio
@@ -372,7 +391,7 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
     if field:
         # The file has two distinct calls. Preserve their separation in the DMA recording.
         assert not any(wire[:start]) and len(captured)==2*expected_samples
-        if adjusted and not stress:
+        if adjusted and not stress and not chimes:
             previous=ROOT/".analysis/dmr-rx6-worker/final"/region/"dmr-received-field.wav"
             with wave.open(str(previous),"rb") as wav:
                 original=wav.readframes(wav.getnframes())
@@ -384,7 +403,7 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
             gain_report=dict(before_peak=int(np.max(abs(old))),after_peak=int(np.max(abs(new))),
                              rms_gain_db=float(10*np.log10(np.sum(new**2)/np.sum(old**2))),
                              compressed_samples=int(np.count_nonzero(abs(old)>12288)))
-    else:
+    elif not chimes:
         reference=speech_reference(reference,meta.get("speech_gain_halves",[0])[0])
         if has_alerts: reference=reference_alert(reference,[0])
         if adjusted: reference=playback_reference(reference)
@@ -397,7 +416,7 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
         painted=painted[:monitor_bytes]+b"\xa5"*4+painted[monitor_bytes+4:]
         untouched=next(i for i,v in enumerate(painted) if v!=0xa5)
         stats=dict(dat_sha256=meta["sha256"],region=region,calls=2*field_repeats,
-                   input_blocks=input_blocks,voice_frames=expected_samples//160,
+                   input_blocks=input_blocks,voice_frames=speech_samples//160,end_chimes=len(chimes),
                    playback_samples=panel_audio[1],stack_base=hex(worker_stack),
                    stack_size=cold["stack_size"],observed_stack_writes_span=len(painted)-untouched,
                    stack_sentinel_and_lower_guard_intact=not first_crossing and word(worker_stack)==0xe25a2ea5,
@@ -430,7 +449,7 @@ def bench(region, samples, reference, *, highpass=0, field=False, field_repeats=
                 clear_call_status=list(final),phases=sorted(phases),pcm_samples=expected_samples,
                 input_blocks=input_blocks,varying_blocks=varying_blocks,panel_audio_samples=panel_audio,
                 native_playback_priority_checked=native_priority_checked,
-                voice_frames=expected_samples//160,first_output_dma_block=first,
+                voice_frames=speech_samples//160,end_chimes=chimes,first_output_dma_block=first,
                 pcm_sha256=sha256(captured).hexdigest(),heap_address=hex(base),
                 sd_error_states=error_states,exit_freed=True,
                 emulated="48 kHz discriminator input, card/heap/RTX scheduling; original SSIF0 DMA, packaged code and worker")

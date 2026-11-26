@@ -46,16 +46,21 @@ static int p25_nid(const uint8_t *frame,unsigned *nid) {
     parity|=p25_get(frame,&p,24);
     for(unsigned i=0;i<16;++i)
         if(info&(0x8000u>>i)) parity^=rows[i];
-    /* BCH(63,16,23): this radius of eight has a unique solution. Try up
-       to two bad information bits; the remaining errors may be in parity. */
-    if(__builtin_popcountll(parity>>1)>8) {
+    /* BCH(63,16,23) guarantees uniqueness within eleven errors. Search
+       up to three in the information bits and charge the rest to parity. */
+    if(__builtin_popcountll(parity>>1)>11) {
         unsigned correction=0;
         for(unsigned i=0;i<16 && !correction;++i) {
             uint64_t one=parity^rows[i];
-            if(__builtin_popcountll(one>>1)<=7) correction=0x8000u>>i;
-            for(unsigned j=i+1;j<16 && !correction;++j)
-                if(__builtin_popcountll((one^rows[j])>>1)<=6)
-                    correction=(0x8000u>>i)|(0x8000u>>j);
+            unsigned first=0x8000u>>i;
+            if(__builtin_popcountll(one>>1)<=10) correction=first;
+            for(unsigned j=i+1;j<16 && !correction;++j) {
+                uint64_t two=one^rows[j];
+                unsigned pair=first|(0x8000u>>j);
+                if(__builtin_popcountll(two>>1)<=9) correction=pair;
+                for(unsigned k=j+1;k<16 && !correction;++k)
+                    if(__builtin_popcountll((two^rows[k])>>1)<=8) correction=pair|(0x8000u>>k);
+            }
         }
         if(!correction) return 0;
         info^=correction;
@@ -110,23 +115,39 @@ static unsigned syndromes(const unsigned word[24],unsigned *s,unsigned parity) {
 
 /* Shortened GF(64) RS: Berlekamp-Massey locator and Forney magnitudes.
    Accept corrected control bytes only after all syndromes are zero. */
-static int p25_rs(unsigned word[24],unsigned parity) {
+static int p25_rs(unsigned word[24],unsigned parity,unsigned erasures) {
     unsigned s[12], loc[13]={1}, prev[13]={1}, degree=0, shift=1, scale=1;
     if(!syndromes(word,s,parity)) return 1;
-    for(unsigned k=0;k<parity;++k) {
-        unsigned discrepancy=s[k];
-        for(unsigned j=1;j<=degree;++j) discrepancy^=gf_mul(loc[j],s[k-j]);
+    unsigned known[13]={1}, work[12], missing=0, terms=parity;
+    memcpy(work,s,parity*sizeof(*s));
+    for(unsigned j=24,x=1;j;--j,x=gf_mul(x,2)) {
+        if(!(erasures&(1u<<(j-1)))) continue;
+        if(++missing>parity/2) return 0;
+        for(unsigned k=missing;k;--k) known[k]^=gf_mul(known[k-1],x);
+        --terms;
+        for(unsigned k=0;k<terms;++k) work[k]=gf_mul(work[k],x)^work[k+1];
+    }
+    for(unsigned k=0;k<terms;++k) {
+        unsigned discrepancy=work[k];
+        for(unsigned j=1;j<=degree;++j) discrepancy^=gf_mul(loc[j],work[k-j]);
         if(!discrepancy) { ++shift; continue; }
         unsigned before[13], factor=gf_mul(discrepancy,gf_inverse(scale));
         memcpy(before,loc,sizeof(loc));
-        for(unsigned j=shift;j<=parity;++j) loc[j]^=gf_mul(factor,prev[j-shift]);
+        for(unsigned j=shift;j<=terms;++j) loc[j]^=gf_mul(factor,prev[j-shift]);
         if(2*degree<=k) {
             degree=k+1-degree; memcpy(prev,before,sizeof(prev));
             scale=discrepancy; shift=1;
         } else ++shift;
     }
-    if(!degree || degree>parity/2) return 0;
-    unsigned omega[6]={0}, derivative[6]={0};
+    if((!degree && !missing) || degree>terms/2) return 0;
+    if(missing) {
+        unsigned combined[13]={0};
+        for(unsigned i=0;i<=degree;++i)
+            for(unsigned j=0;j<=missing;++j) combined[i+j]^=gf_mul(loc[i],known[j]);
+        memcpy(loc,combined,sizeof(loc));
+        degree+=missing;
+    }
+    unsigned omega[12]={0}, derivative[12]={0};
     for(unsigned i=0;i<degree;++i) {
         for(unsigned j=0;j<=i;++j) omega[i]^=gf_mul(loc[j],s[i-j]);
         if(!(i&1)) derivative[i]=loc[i+1];
@@ -145,17 +166,22 @@ static int p25_rs(unsigned word[24],unsigned parity) {
 static int p25_control(const uint8_t *frame,unsigned duid,uint8_t bytes[12]) {
     static const unsigned starts[]={410,600,788,978,1168,1356};
     static const unsigned columns[]={14,13,11,7,3,12};
-    unsigned symbols[24];
+    unsigned symbols[24], erasures=0;
     for(unsigned j=0;j<6;++j) {
         unsigned p=starts[j];
         for(unsigned k=0;k<4;++k) {
             unsigned d=p25_get(frame,&p,6), syndrome=p25_get(frame,&p,4);
             for(unsigned i=0;i<6;++i) if(d&(32>>i)) syndrome^=columns[i];
-            for(unsigned i=0;i<6;++i) if(syndrome==columns[i]) d^=32>>i;
+            for(unsigned i=0;i<6;++i) if(syndrome==columns[i]) { d^=32>>i; syndrome=0; break; }
+            if(syndrome && (syndrome&(syndrome-1))) erasures|=1u<<(4*j+k);
             symbols[4*j+k]=d;
         }
     }
-    if(!p25_rs(symbols,duid==5 ? 12 : 8)) return 0;
+    unsigned parity=duid==5 ? 12 : 8, candidate[24];
+    memcpy(candidate,symbols,sizeof(candidate));
+    if(!p25_rs(candidate,parity,0)) {
+        if(!erasures || !p25_rs(symbols,parity,erasures)) return 0;
+    } else memcpy(symbols,candidate,sizeof(symbols));
     for(unsigned i=0;i<16;++i)
         for(unsigned j=0;j<6;++j) {
             unsigned pos=i*6+j;
@@ -209,7 +235,7 @@ static void p25_frame(const uint8_t *frame,unsigned nid) {
 }
 
 /* Trace one predecessor bit per state at each K=5 trellis step. */
-static void viterbi(const uint8_t *air,unsigned steps,uint8_t *bits,const int8_t *soft) {
+static void viterbi(const uint8_t *air,unsigned steps,uint8_t *bits,const int8_t *soft,int linear) {
     uint16_t trace[180], costs[16]={0}, next[16];
     for(unsigned s=1;s<16;++s) costs[s]=8192;
     unsigned depth=steps/20;
@@ -218,7 +244,8 @@ static void viterbi(const uint8_t *air,unsigned steps,uint8_t *bits,const int8_t
         for(unsigned k=0;k<4;++k) {
             static const int8_t level[]={4,12,-4,-12};
             int error=soft ? soft[j]-level[k] : 0;
-            metric[k]=soft ? (unsigned)(error*error)/4 : __builtin_popcount(k^dibit);
+            metric[k]=soft ? (linear ? (unsigned)(error<0 ? -error : error)
+                                     : (unsigned)(error*error)/4) : __builtin_popcount(k^dibit);
         }
         for(unsigned s=0;s<16;++s) {
             unsigned reg=s, prev=s>>1;
@@ -250,25 +277,51 @@ static unsigned golay(unsigned data) {
     unsigned word=(data<<11)|r;
     return (word<<1)|__builtin_parity(word);
 }
+static const uint16_t golay_columns[]={0x8eb,0x93e,0xa97,0xdc6,0x367,0x6cd,0xd99,0x3da,0x7b4,0xf68,0x63b,0xc75};
+
 /* Extended Golay has minimum distance eight. Search the systematic data
    half for up to three errors and charge the remaining radius to parity. */
 static int golay_correct(unsigned word,unsigned *out) {
     unsigned data=word>>12, syndrome=(golay(data)^word)&4095;
     if(__builtin_popcount(syndrome)<=3) { *out=data; return 1; }
-    static const uint16_t columns[]={0x8eb,0x93e,0xa97,0xdc6,0x367,0x6cd,0xd99,0x3da,0x7b4,0xf68,0x63b,0xc75};
     for(unsigned i=0;i<12;++i) {
-        unsigned one=syndrome^columns[i], a=data^(1u<<i);
+        unsigned one=syndrome^golay_columns[i], a=data^(1u<<i);
         if(__builtin_popcount(one)<=2) { *out=a; return 1; }
         for(unsigned j=i+1;j<12;++j) {
-            unsigned two=one^columns[j], b=a^(1u<<j);
+            unsigned two=one^golay_columns[j], b=a^(1u<<j);
             if(!(two&(two-1))) { *out=b; return 1; }
             for(unsigned k=j+1;k<12;++k)
-                if(two==columns[k]) { *out=b^(1u<<k); return 1; }
+                if(two==golay_columns[k]) { *out=b^(1u<<k); return 1; }
         }
     }
     return 0;
 }
-static int fich(const uint8_t *frame,uint8_t *info,const int8_t *soft) {
+static void unpack_golay(uint8_t *bits,unsigned data) {
+    for(unsigned i=0;i<12;++i) bits[i]=(data>>(11-i))&1;
+}
+
+/* A distance-four Golay word is ambiguous on its own. Only recover one
+   ambiguous word per FICH, and require a unique match to its frame CRC. */
+static int fich_ambiguous(unsigned word,uint8_t *info,unsigned slot) {
+    unsigned corrected=0, accepted=0, parity=word&4095;
+    for(unsigned i=0,data=0,code=0;i<4096;++i) {
+        if(i) {
+            unsigned bit=__builtin_ctz(i);
+            data^=1u<<bit;
+            code^=golay_columns[bit];
+        }
+        if(__builtin_popcount(data^(word>>12))+__builtin_popcount(code^parity)!=4) continue;
+        unpack_golay(info+12*slot,data);
+        if(crc16(info,32)!=value(info+32,16)) continue;
+        if(accepted) return 0;
+        corrected=data;
+        accepted=1;
+    }
+    if(accepted) unpack_golay(info+12*slot,corrected);
+    return accepted;
+}
+
+static int fich(const uint8_t *frame,uint8_t *info,const int8_t *soft,int linear) {
     uint8_t bits[100];
     int8_t sliced[100];
     if(!soft && frame==rx.equalized_dibits) {
@@ -276,12 +329,19 @@ static int fich(const uint8_t *frame,uint8_t *info,const int8_t *soft) {
         for(unsigned i=0;i<100;++i) sliced[i]=level[frame[20+i]];
         soft=sliced;
     }
-    viterbi(frame+20,100,bits,soft);
+    viterbi(frame+20,100,bits,soft,linear);
+    unsigned ambiguous=4, word=0;
     for(unsigned k=0;k<4;++k) {
         unsigned data;
-        if(!golay_correct(value(bits+24*k,24),&data)) return 0;
-        for(unsigned i=0;i<12;++i) info[k*12+i]=(data>>(11-i))&1;
+        unsigned candidate=value(bits+24*k,24);
+        if(golay_correct(candidate,&data)) unpack_golay(info+12*k,data);
+        else {
+            if(ambiguous!=4) return 0;
+            ambiguous=k;
+            word=candidate;
+        }
     }
+    if(ambiguous!=4) return fich_ambiguous(word,info,ambiguous);
     return crc16(info,32)==value(info+32,16);
 }
 static void unwhiten(uint8_t *bits,unsigned n) {
@@ -294,7 +354,7 @@ static void unwhiten(uint8_t *bits,unsigned n) {
 static void callsign(const uint8_t *frame,unsigned width,unsigned offset) {
     uint8_t coded[180],bits[180]; unsigned steps=5*width;
     for(unsigned i=0;i<5;++i) memcpy(coded+i*width,frame+120+72*i,width);
-    viterbi(coded,steps,bits,0);
+    viterbi(coded,steps,bits,0,0);
     if(crc16(bits,steps-20)!=value(bits+steps-20,16)) return;
     unwhiten(bits,steps-20);
     char text[11]={0};
@@ -310,7 +370,10 @@ static void fusion_frame(const uint8_t *frame) {
     uint8_t info[48];
     /* The two symbol detectors may deliver the same 100 ms frame. */
     if(rx.frame_seen && rx.clock-rx.last_frame<2400) return;
-    if(!fich(frame,info,0) && (frame!=rx.equalized_dibits || !fich(frame,info,rx.fich_levels))) return;
+    if(!fich(frame,info,0,0)) {
+        if(frame!=rx.equalized_dibits) return;
+        if(!fich(frame,info,rx.fich_levels,0) && (!rx.frame_seen || !fich(frame,info,rx.fich_levels,1))) return;
+    }
     rx.frame_seen=1;
     unsigned fi=value(info,2), cm=value(info+4,2), fn=value(info+10,3);
     unsigned ft=value(info+13,3), dt=value(info+22,2), dg=value(info+25,7);
@@ -362,7 +425,7 @@ static void correlate(unsigned mode,unsigned n,unsigned branch) {
     xx-=sx*sx/n; xy-=sx*sy/n; yy-=sy*sy/n;
     if(yy<64*n) return;
     float score=xy*xy/(xx*yy);
-    if(score<0.72f || (rx.pending && score<=rx.best)) return;
+    if(score<0.66f || (rx.pending && score<=rx.best)) return;
     if(!rx.pending) { rx.deadline=rx.clock+9; rx.pending=1; }
     rx.best=score; rx.best_tick=rx.clock; rx.branch=branch;
     rx.gain=xy/xx; rx.center=(sy-rx.gain*sx)/n;
@@ -412,6 +475,7 @@ static void audio_sync(unsigned mode,unsigned index,unsigned phase) {
     unsigned mask=protocol ? 0xfffd : 0xddff;
     unsigned diff=(signs^(protocol ? 0x67ae : 0x6a72))&mask, inverse=diff^mask;
     diff&=diff-1; inverse&=inverse-1;
+    diff&=diff-1; inverse&=inverse-1;
     if((diff&(diff-1)) && (inverse&(inverse-1))) return;
     int dot=0, other=0, energy=0;
     for(unsigned j=0;j<51;++j) {
@@ -426,11 +490,12 @@ static void audio_sync(unsigned mode,unsigned index,unsigned phase) {
     float alternate_norm=protocol ? 248363.0f : 433350.0f;
     float score=(float)dot*dot/(norm*energy), other_score=(float)other*other/(alternate_norm*energy);
     float peak=score>other_score ? score : other_score;
-    if(peak<0.77f || (rx.audio_pending && peak<=rx.audio_score)) return;
+    float threshold=rx.frame_seen ? 0.64f : 0.72f;
+    if(peak<threshold || (rx.audio_pending && peak<=rx.audio_score)) return;
     float margin=other_score-score;
     float history=rx.frame_seen ? rx.response_history : 0;
     unsigned profile=0;
-    if(other_score>=0.77f && (score<0.77f || margin+history>0)) {
+    if(other_score>=threshold && (score<threshold || margin+history>0)) {
         norm=alternate_norm; dot=other; profile=1+protocol;
     }
     rx.response_margin=margin;
@@ -530,6 +595,7 @@ void digital_block(unsigned mode,const int16_t pcm[36]) {
                 uint32_t *s=&rx.signs[b][phase];
                 *s=(*s<<1)|(rx.history[b][index]<0);
                 unsigned diff=(*s^sync)&mask, inv=diff^mask;
+                diff&=diff-1; inv&=inv-1;
                 if(!(diff&(diff-1)) || !(inv&(inv-1))) correlate(mode,n,b);
             }
             if(rx.pending && rx.clock==rx.deadline) {

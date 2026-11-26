@@ -1,10 +1,10 @@
 {
-  "version": "v1.5.3",
+  "version": "v1.6.0",
   "size": 12279020,
   "stock": "132383f8388641d02d0fadaccf9878d01a1960fa77a028328f0eb33dcfbc147b",
-  "target": "9d4454d328213c7b4cb5636f7696c6a50f6746150094559701b089e7cd6ad894",
-  "patch": "8c867faa4af2ba712d1a86e501d9c880ed0e90a8d770865e117a500bc518e097.xor.gz",
-  "patchHash": "8c867faa4af2ba712d1a86e501d9c880ed0e90a8d770865e117a500bc518e097",
+  "target": "84f86ef2e3a7360d64306cf2d0a7889a2f4516a16ca4f720141db275d55a0b2f",
+  "patch": "8a17dc37f119398c55f553d97bb68d4b570c1e530c470f15754603e22ac410c0.xor.gz",
+  "patchHash": "8a17dc37f119398c55f553d97bb68d4b570c1e530c470f15754603e22ac410c0",
   "notes": {
     "features": {
       "zh": [
@@ -27,6 +27,16 @@
       ]
     },
     "history": [
+      {
+        "version": "v1.6.0",
+        "date": "2026-11-26",
+        "regions": [
+          "J140",
+          "E140"
+        ],
+        "zh": "新增｜FT8／FT4 的自动通联可启用定时休息，从启动本轮全自动起算，含找台和守听，运行 45 分钟后守听 5 分钟，再按原工作类型继续。本台可输入 4、6 或 8 位网格，日志保留完整网格，标准空口报文发送前 4 位。\n\n新增与调整｜全自动选台可包含或排除呼号字头，并按接收顺序、信号或距离优先。未应答目标可设当天或 10／30／60 分钟冷却。发射时可翻看接收列表和日志，接收倒计时失去有效授时时显示 --.-s。\n\n调整｜FT8／FT4 的 A／B 时隙、进度条和接收列表重新排版，QTH、dB、Hz、km 分列左对齐。待发、发送中和待确认报文与接收行使用同款字形。修正待确认时显示上一条报文和原厂截屏画面异常的问题。按住手咪时，FT 会让出发射。\n\n新增与调整｜APRS 接收列表可按日期回看归档，普通 FM 守听可单独静音 APRS。接收弹窗加宽，使用闭合的呼吸边框和原厂定位罗盘，并适配展开频谱。\n\n修复｜改善 DMR、YSF、常规 P25 Phase 1 的弱信号解调。DMR 的开场提示音按组呼、个呼、全呼区分，通话结束时也有提示音，切换数字制式时保留频谱布局。\n\n修复｜解决 SSTV 选图后点 SEND 偶发 NO MEMORY。图片仍在写入时提示稍后重试，避免发到一半被另一张图替换。\n\n安装｜请同时下载本版数字语音 SD 卡包，将 DMRRX.BIN 放入 SD 卡根目录下的 IC-705 文件夹，覆盖旧文件。",
+        "en": "Added — FT8/FT4 automatic operation has an optional 5-minute receive-only rest after 45 minutes of automatic operation, including time spent listening and searching, then resumes the same activity. Enter a 4-, 6- or 8-character station grid. Logs retain the full grid and standard over-the-air messages use the first four characters.\n\nAdded and changed — Filter automatic station selection by callsign prefix, then prioritize reception order, signal strength or distance. Unanswered stations can be skipped for the day or for 10, 30 or 60 minutes. Browse the receive list and log during transmission. The receive countdown shows --.-s when time is unavailable.\n\nChanged — The FT8/FT4 A/B slot indicator, progress bar and receive list have a new layout. QTH, dB, Hz and km each align with their column heading. Queued, on-air and confirmation messages use the receive-list font. Fixed stale confirmation text and stock screenshot rendering. FT yields when microphone PTT is held.\n\nAdded and changed — Browse APRS receive history by date or mute APRS separately while monitoring FM. The wider pop-up has a pulsing border and uses the stock compass for position reports. It also works with the expanded scope.\n\nFixed — Improved weak-signal reception of DMR, YSF and conventional P25 Phase 1. DMR distinguishes group, private and all calls with opening tones and signals the end of a call. Cycling through digital modes preserves the spectrum layout.\n\nFixed — SSTV no longer needs a second picture buffer on SEND, resolving an intermittent NO MEMORY error. When a picture is being written, the radio asks the operator to retry. A queued picture waits until transmission releases the current image.\n\nInstallation — Download the matching digital voice SD ZIP and replace IC-705/DMRRX.BIN on the SD card."
+      },
       {
         "version": "v1.5.3",
         "date": "2026-11-24",

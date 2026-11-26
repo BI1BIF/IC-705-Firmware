@@ -11,7 +11,7 @@ enum { PCM_CAPACITY = 2048 };
 static mbe_parms current, previous, enhanced;
 static int16_t queue[PCM_CAPACITY];
 static uint32_t produced, consumed;
-static unsigned tone_left, tone_length;
+static unsigned tone_left, tone_length, dmr_chime;
 volatile uint32_t dmr_audio_active;
 
 /* One worker begins each call. Publishing the write position as the new read
@@ -20,12 +20,41 @@ void dmr_audio_reset(void) {
     __atomic_store_n(&consumed, __atomic_load_n(&produced, __ATOMIC_RELAXED), __ATOMIC_RELEASE);
     mbe_initMbeParms(&current, &previous, &enhanced);
     mbe_setThreadRngSeed(0x12345678);
-    tone_left=0;
+    tone_left=dmr_chime=0;
 }
 
 /* One, two or three 35 ms pulses, mixed under speech on the worker. */
 void digital_alert(unsigned kind) {
+    dmr_chime=0;
     tone_length=tone_left=kind && kind<=3 ? (kind-1)*480+280 : 0;
+}
+
+void dmr_start_alert(unsigned kind) {
+    dmr_chime=1;
+    tone_length=tone_left=kind*304;
+}
+
+/* Short notes ramp to zero at both edges, even for fractional periods. */
+static int note(unsigned sample,unsigned length,unsigned hz) {
+    static const int16_t sine[]={0,293,574,833,1061,1247,1386,1471,1500,1471,1386,1247,1061,833,574,293,
+                                0,-293,-574,-833,-1061,-1247,-1386,-1471,-1500,-1471,-1386,-1247,-1061,-833,-574,-293};
+    if(sample>=length) return 0;
+    unsigned edge=length-1-sample;
+    unsigned ramp=sample<edge ? sample : edge;
+    if(ramp>24) ramp=24;
+    return sine[(sample*hz*32/8000)&31]*(int)ramp/24;
+}
+
+int dmr_end_alert(void) {
+    enum { SAMPLES=480 };
+    unsigned start=__atomic_load_n(&produced,__ATOMIC_RELAXED);
+    if(start-__atomic_load_n(&consumed,__ATOMIC_ACQUIRE)>PCM_CAPACITY-SAMPLES) return 0;
+    for(unsigned i=0;i<SAMPLES;++i) {
+        int v=i<240 ? note(i,192,960) : note(i-240,240,720);
+        queue[(start+i)&(PCM_CAPACITY-1)]=v;
+    }
+    __atomic_store_n(&produced,start+SAMPLES,__ATOMIC_RELEASE);
+    return 1;
 }
 
 /* Speech gain in half units. Keep strong peaks below full scale and mix the
@@ -41,8 +70,11 @@ static int publish(const int16_t pcm[160], int status, unsigned gain2) {
         if(boosted>ceiling) boosted=ceiling;
         int v=pcm[i]<0 ? -boosted : boosted;
         if (tone_left) {
-            unsigned t=(tone_length-tone_left--)%480;
-            if (t<280) {
+            unsigned t=tone_length-tone_left--;
+            if(dmr_chime) {
+                static const unsigned notes[]={800,1000,1250};
+                v+=note(t%304,224,notes[t/304]);
+            } else if ((t%=480)<280) {
                 static const int16_t sine[]={0,1061,1500,1061,0,-1061,-1500,-1061};
                 unsigned envelope=t<16 ? t : t>=264 ? 279-t : 16;
                 v+=sine[t&7]*(int)envelope/16;
