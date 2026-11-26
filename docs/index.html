@@ -2,11 +2,11 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=7"><script type="module" src="converter/app.js?v=13"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=7"><script type="module" src="converter/app.js?v=14"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
-<p data-en="Select the original IC-705 1.40 DAT to build firmware with CW, SSTV, FT8/FT4, APRS and digital voice reception. Your file stays in this browser.">选择 IC-705 的 1.40 原厂 DAT，生成含 CW、SSTV、FT8／FT4、APRS 和数字语音接收的固件。原厂文件只在浏览器内处理。</p>
+<p id="conversion-pause" role="status"><strong data-en="Firmware conversion is paused for J140 and E140 while we fix an issue in v1.6.0. Please wait for the corrected firmware before updating.">日版 J140 和欧／美版 E140 的固件转换已暂停。正在修复 v1.6.0 的问题，请等修正版发布后再更新。</strong></p>
 <section class="walkthrough" aria-labelledby="demo-heading">
 <div><h2 id="demo-heading" data-en="Radio simulator walkthrough">电台模拟操作演示</h2>
 <p><a href="ftx-v2-sim.html" data-en="FT8 / FT4 simulator">FT8／FT4 模拟操作</a></p>

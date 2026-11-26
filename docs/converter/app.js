@@ -3,6 +3,7 @@ let lang = "zh", release, downloadUrl, state = "", failed = false;
 try { if (localStorage.getItem("ic705-language") === "en") lang = "en"; } catch {}
 let received = 0, notes;
 const releases = [];
+const conversionPaused = Boolean(el("conversion-pause"));
 const messages = {
   fetching:["正在下载转换补丁","Downloading the patch"],
   network:["补丁下载中断或服务器未响应。请检查网络，再点“转换并下载”重试。","The patch download stalled or failed. Check your connection, then select Build and download to retry."],
@@ -40,7 +41,7 @@ function render() {
   setState(state);
   const sharedVersion = releases.length === 2 && releases[0].version === releases[1].version ? releases[0].version : "";
   const target = release ? release.version + " · " + release.region : sharedVersion;
-  el("version").textContent = failed ? (lang === "en" ? "Unavailable" : "不可用") :
+  el("version").textContent = conversionPaused ? (lang === "en" ? "Conversion paused" : "转换已暂停") : failed ? (lang === "en" ? "Unavailable" : "不可用") :
     target || (lang === "en" ? "Select a file" : "请选择底包");
   const name = release?.filename;
   el("sd-path").hidden = !name;
@@ -143,6 +144,7 @@ function clearDownload() {
 }
 
 source.onchange = async () => {
+  if (conversionPaused) return;
   clearDownload();
   release = null;
   build.disabled = true;
@@ -166,7 +168,7 @@ source.onchange = async () => {
 
 build.onclick = async () => {
   const file = source.files[0];
-  if (!file || !release) return;
+  if (conversionPaused || !file || !release) return;
   clearDownload();
   source.disabled = build.disabled = true;
   try {
@@ -194,7 +196,7 @@ build.onclick = async () => {
   }
 };
 
-try {
+async function loadReleases() {
   if (!globalThis.DecompressionStream || !globalThis.crypto?.subtle) throw new Error("unsupported");
   for (const [manifest, region] of [["latest.json", "J140"], ["e140.json", "E140"]]) {
     const item = await (await get("converter/" + manifest)).json();
@@ -203,9 +205,13 @@ try {
         item.size <= 0 || !item.version) throw new Error("loadError");
     releases.push({...item, region, filename: "705" + region + ".dat"});
   }
-  notes = await (await get("converter/release-notes.json")).json();
-  render();
   source.disabled = false;
+}
+
+try {
+  notes = await (await get("converter/release-notes.json")).json();
+  if (!conversionPaused) await loadReleases();
+  render();
 } catch (error) {
   release = null;
   failed = true;
