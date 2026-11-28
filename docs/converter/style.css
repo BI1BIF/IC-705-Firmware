@@ -29,3 +29,8 @@ nav,.switch,.file{display:flex;align-items:center;gap:14px}.switch{position:rela
 .install-paths code { overflow-wrap: anywhere; }
 
 #history .entry p { white-space: pre-line; }
+.maintenance { margin: 18px 0; padding: 12px 16px; border-left: 4px solid #327457; background: #e5eee7; }
+.maintenance h2 { margin: 0; font-size: 1.1rem; }
+.maintenance p, #feedback p { margin: .45em 0; }
+#older-releases { margin: 14px 0; border-top: 1px solid #d5ded5; }
+#older-releases summary { padding: 10px 0; color: #205f48; font-weight: 650; cursor: pointer; }

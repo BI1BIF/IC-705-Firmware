@@ -2,11 +2,16 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>IC-705 固件转换器</title>
-<link rel="stylesheet" href="converter/style.css?v=7"><script type="module" src="converter/app.js?v=15"></script></head>
+<link rel="stylesheet" href="converter/style.css?v=8"><script type="module" src="converter/app.js?v=16"></script></head>
 <body><header><div class="bar"><b>BI1BIF <span>/ IC-705</span></b><nav><a href="https://github.com/BI1BIF/IC-705-Firmware">GitHub ↗</a>
 <div class="switch" role="group" aria-label="中文 / English"><button type="button" lang="zh-CN" id="zh" aria-pressed="true">中文</button><button type="button" lang="en" id="en" aria-pressed="false">English</button></div></nav></div></header>
 <main><h1 data-en="IC-705 firmware converter">IC-705 固件转换器</h1>
 <p data-en="Select the original IC-705 1.40 DAT to build firmware with CW, SSTV, FT8/FT4, APRS and digital voice reception. Your file stays in this browser.">选择 IC-705 的 1.40 原厂 DAT，生成含 CW、SSTV、FT8／FT4、APRS 和数字语音接收的固件。原厂文件只在浏览器内处理。</p>
+<aside class="maintenance" aria-labelledby="maintenance-title">
+<h2 id="maintenance-title" data-en="Test radio under repair">测试电台维修中</h2>
+<p data-en="The flash memory in my IC-705 was damaged during firmware testing. My radio is being repaired, so future firmware updates may be delayed.">我的 IC-705 在测试刷机时 Flash 芯片受损，目前正在维修。后续固件更新可能会延迟。</p>
+<a href="#feedback" data-en="Report a bug">反馈问题</a>
+</aside>
 <section class="walkthrough" aria-labelledby="demo-heading">
 <div><h2 id="demo-heading" data-en="Radio simulator walkthrough">电台模拟操作演示</h2>
 <p><a href="ftx-v2-sim.html" data-en="FT8 / FT4 simulator">FT8／FT4 模拟操作</a></p>
@@ -83,7 +88,16 @@
 </ol>
 </section>
 <section class="details"><h2 data-en="Current features">当前版本功能</h2><ul id="features"></ul></section>
-<section class="details" id="release-history"><h2 data-en="Release history">版本更新日志</h2><div id="history"></div>
+<section class="details" id="feedback" aria-labelledby="feedback-heading">
+<h2 id="feedback-heading" data-en="Report a bug">问题反馈</h2>
+<p data-en="Please include your radio’s region, the patch version, and the steps that led to the problem.">请写明电台地区、补丁版本，以及出现问题前的操作步骤。</p>
+<p><a href="https://github.com/BI1BIF/IC-705-Firmware/issues" data-en="View or report issues on GitHub">在 GitHub 查看或反馈问题</a></p>
+<p><span data-en="Email">电子邮箱</span> <a href="mailto:BI1BIF@163.com">BI1BIF@163.com</a></p>
+</section>
+<section class="details" id="release-history"><h2 data-en="Release history">版本更新日志</h2><div id="history">
+<div id="recent-history"></div>
+<details id="older-releases" hidden><summary data-en="Earlier releases">更早的更新记录</summary><div id="older-history"></div></details>
+</div>
 <a href="https://github.com/BI1BIF/IC-705-Firmware#previous-versions" data-en="Look up a previous build identifier ↗">查询旧版本号 ↗</a></section>
 <p><a href="converter/ftx-notices.txt" data-en="FT8/FT4 third-party notices">FT8／FT4 第三方许可</a> · <a href="https://github.com/BI1BIF/IC-705-Firmware/blob/main/docs/IC705_APRS.md" data-en="APRS guide and artwork credits (Chinese)">APRS 说明与图标署名</a></p>
 </main></body></html>

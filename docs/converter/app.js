@@ -51,7 +51,7 @@ function render() {
   }
   if (!notes) return;
   el("features").replaceChildren(...notes.features[lang].map(line => node("li", line)));
-  el("history").replaceChildren(...notes.history.map((row, index) => {
+  const entries = notes.history.map((row, index) => {
     const entry = document.createElement("article");
     entry.className = "entry";
     const title = node("h3", row.version + " · " + row.regions.join(" / ") + (index ? "" : lang === "en" ? " · Latest" : " · 最新版"));
@@ -62,7 +62,11 @@ function render() {
     }
     entry.append(title, ...row[lang].split("\n\n").map(paragraph => node("p", paragraph)));
     return entry;
-  }));
+  });
+  const visibleCount = 3;
+  el("recent-history").replaceChildren(...entries.slice(0, visibleCount));
+  el("older-history").replaceChildren(...entries.slice(visibleCount));
+  el("older-releases").hidden = entries.length <= visibleCount;
 }
 for (const code of ["zh","en"]) el(code).onclick = () => {
   lang = code;
